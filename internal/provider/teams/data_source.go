@@ -1,0 +1,69 @@
+package teams
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
+)
+
+// NewDataSource is the factory consumed by the provider's DataSources() list.
+func NewDataSource() datasource.DataSource {
+	return &teamDataSource{}
+}
+
+type teamDataSource struct {
+	client *client.Client
+}
+
+func (d *teamDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_team"
+}
+
+func (d *teamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Look up an existing Caputchin team by id.",
+		Attributes: map[string]schema.Attribute{
+			"id":         schema.StringAttribute{Required: true, Description: "Team identifier."},
+			"name":       schema.StringAttribute{Computed: true, Description: "Team name."},
+			"account_id": schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
+			"kind":       schema.StringAttribute{Computed: true, Description: "Team kind (`personal` or `shared`)."},
+			"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
+			"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
+		},
+	}
+}
+
+func (d *teamDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	c, ok := req.ProviderData.(*client.Client)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"unexpected-provider-data",
+			fmt.Sprintf("Expected *client.Client, got %T. This is a provider bug.", req.ProviderData),
+		)
+		return
+	}
+	d.client = c
+}
+
+func (d *teamDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var cfg teamModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var env teamEnvelope
+	if err := d.client.Get(ctx, "/v1/management/teams/"+cfg.ID.ValueString(), &env); err != nil {
+		resp.Diagnostics.AddError("team-read-failed", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, env.Team.toModel())...)
+}

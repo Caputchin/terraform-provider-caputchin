@@ -1,0 +1,31 @@
+package teams
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+)
+
+// int64UseStateForUnknown is the int64 equivalent of
+// stringplanmodifier.UseStateForUnknown. The framework ships a string version
+// out of the box; for Int64 we roll a tiny inline one rather than depending on
+// the larger plan-modifier helper packages.
+type int64UseStateForUnknown struct{}
+
+func (int64UseStateForUnknown) Description(_ context.Context) string {
+	return "When the state value is known, use it as the planned value to avoid spurious diffs."
+}
+
+func (int64UseStateForUnknown) MarkdownDescription(ctx context.Context) string {
+	return (int64UseStateForUnknown{}).Description(ctx)
+}
+
+func (int64UseStateForUnknown) PlanModifyInt64(_ context.Context, req planmodifier.Int64Request, resp *planmodifier.Int64Response) {
+	if req.State.Raw.IsNull() {
+		return
+	}
+	if !req.PlanValue.IsUnknown() {
+		return
+	}
+	resp.PlanValue = req.StateValue
+}
