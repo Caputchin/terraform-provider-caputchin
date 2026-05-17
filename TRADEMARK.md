@@ -65,7 +65,7 @@ When the same project has both — e.g., Registry namespace `someorg/caputchin-e
 
 ## Asking for permission
 
-Submit requests to `legal@caputchin.com` with:
+Submit requests to `info@caputchin.com` with:
 
 - Who you are (individual, company, project).
 - The proposed use of the marks (name, context, scope, geography).
