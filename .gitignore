@@ -1,0 +1,35 @@
+# Compiled binaries
+terraform-provider-caputchin
+terraform-provider-caputchin.exe
+*.test
+*.out
+
+# GoReleaser output
+dist/
+
+# Local Terraform state and lock files (examples directory)
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Editor and OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Local development
+.env
+.env.*
+!.env.example
+
+# QA notes (gitignored per workspace convention)
+qa-notes.md
