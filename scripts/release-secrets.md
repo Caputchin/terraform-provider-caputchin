@@ -54,7 +54,7 @@ Paste the output into the Terraform Registry publisher page (Account → Signing
 
 ## Register with the OpenTofu Registry
 
-The OpenTofu Registry follows the same flow — submit the public key in the metadata PR alongside the provider registration. See [ADR-0040](../../docs/adr/0040-publish-terraform-provider-to-both-registries.md).
+The OpenTofu Registry follows the same flow — submit the public key in the metadata PR alongside the provider registration. See [ADR-0042](../../docs/adr/0042-publish-terraform-provider-to-both-registries-and-rename-repo.md).
 
 ## Rotate the key
 

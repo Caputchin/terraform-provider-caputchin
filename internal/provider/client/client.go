@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Caputchin
+// SPDX-License-Identifier: MPL-2.0
+
 // Package client implements the HTTP transport every resource and data source
 // uses to talk to the Caputchin management API.
 package client

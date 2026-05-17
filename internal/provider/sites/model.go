@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Caputchin
+// SPDX-License-Identifier: MPL-2.0
+
 // Package sites implements the caputchin_site_key resource and related data
 // sources. The package will grow to host caputchin_site_config and
 // caputchin_site_stats in later phases.

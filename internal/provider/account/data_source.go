@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Caputchin
+// SPDX-License-Identifier: MPL-2.0
+
 // Package account implements the caputchin_account data source.
 package account
 
