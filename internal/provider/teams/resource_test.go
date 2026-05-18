@@ -39,7 +39,7 @@ func TestTeamCreate_HappyPath(t *testing.T) {
 				"account_id": "acct_x",
 				"kind":       "shared",
 				"name":       "marketing",
-				"tier":       "team",
+				"tier":       "troop",
 				"created_at": int64(1747500000000),
 			},
 		})
@@ -99,7 +99,7 @@ func TestTeamUpdate_PatchesName(t *testing.T) {
 				"account_id": "acct_x",
 				"kind":       "shared",
 				"name":       "renamed",
-				"tier":       "team",
+				"tier":       "troop",
 				"created_at": int64(1747500000000),
 			},
 		})
@@ -140,14 +140,14 @@ func TestApiTeam_ToModel(t *testing.T) {
 		Name:      "ops",
 		AccountID: "acct_x",
 		Kind:      "shared",
-		Tier:      "enterprise",
+		Tier:      "apex",
 		CreatedAt: 1747500000000,
 	}
 	got := src.toModel()
 	if got.ID.ValueString() != "team_abc" {
 		t.Errorf("ID: got %s", got.ID.ValueString())
 	}
-	if got.Tier.ValueString() != "enterprise" {
+	if got.Tier.ValueString() != "apex" {
 		t.Errorf("Tier: got %s", got.Tier.ValueString())
 	}
 	if got.CreatedAt.ValueInt64() != 1747500000000 {

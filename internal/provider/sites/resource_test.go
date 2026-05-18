@@ -38,7 +38,7 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-prod",
 				"team_id":    "team_abc",
-				"tier":       "team",
+				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),
 			},
@@ -86,7 +86,7 @@ func TestSiteUpdate_OnlySendsChangedFields(t *testing.T) {
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-staging",
 				"team_id":    "team_abc",
-				"tier":       "team",
+				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),
 			},
@@ -137,7 +137,7 @@ func TestSiteDelete_HappyPath(t *testing.T) {
 func TestApiSite_ToModel_PreservesSecret(t *testing.T) {
 	src := apiSite{
 		ID: "site_x", Key: "cpt_pub_x", Name: "n", TeamID: "team_x",
-		Tier: "team", Disabled: false, CreatedAt: 1747500000000,
+		Tier: "troop", Disabled: false, CreatedAt: 1747500000000,
 	}
 	got := src.toModel(types.StringValue("cpt_sec_preserved"))
 	if got.Secret.ValueString() != "cpt_sec_preserved" {
