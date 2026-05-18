@@ -33,7 +33,7 @@ func (r *siteResource) Metadata(_ context.Context, req resource.MetadataRequest,
 
 func (r *siteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin site key — the public/secret pair a customer embeds in their site and uses to verify users. `team_id` is immutable; changing it forces replacement.",
+		Description: "A Caputchin site key — the public/secret pair a customer embeds in their site and uses to verify users. `troop_id` is immutable; changing it forces replacement.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued site identifier.",
@@ -53,7 +53,7 @@ func (r *siteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Description: "Human-readable site name. Modifiable in place.",
 				Required:    true,
 			},
-			"team_id": schema.StringAttribute{
+			"troop_id": schema.StringAttribute{
 				Description: "Identifier of the owning team. Immutable — changing this attribute forces replacement of the site key.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
@@ -113,7 +113,7 @@ func (r *siteResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	body := map[string]any{
 		"name":    plan.Name.ValueString(),
-		"team_id": plan.TeamID.ValueString(),
+		"troop_id": plan.TroopID.ValueString(),
 	}
 	var env siteEnvelope
 	if err := r.client.Post(ctx, "/v1/management/sites", body, &env); err != nil {

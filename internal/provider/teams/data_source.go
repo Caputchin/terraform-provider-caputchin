@@ -23,17 +23,17 @@ type teamDataSource struct {
 }
 
 func (d *teamDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_team"
+	resp.TypeName = req.ProviderTypeName + "_troop"
 }
 
 func (d *teamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Look up an existing Caputchin team by id.",
 		Attributes: map[string]schema.Attribute{
-			"id":         schema.StringAttribute{Required: true, Description: "Team identifier."},
-			"name":       schema.StringAttribute{Computed: true, Description: "Team name."},
+			"id":         schema.StringAttribute{Required: true, Description: "Troop identifier."},
+			"name":       schema.StringAttribute{Computed: true, Description: "Troop name."},
 			"account_id": schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
-			"kind":       schema.StringAttribute{Computed: true, Description: "Team kind (`personal` or `shared`)."},
+			"kind":       schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
 			"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
 			"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
 		},
@@ -56,17 +56,17 @@ func (d *teamDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 }
 
 func (d *teamDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var cfg teamModel
+	var cfg troopModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var env teamEnvelope
-	if err := d.client.Get(ctx, "/v1/management/teams/"+cfg.ID.ValueString(), &env); err != nil {
-		resp.Diagnostics.AddError("team-read-failed", err.Error())
+	if err := d.client.Get(ctx, "/v1/management/troops/"+cfg.ID.ValueString(), &env); err != nil {
+		resp.Diagnostics.AddError("troop-read-failed", err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, env.Team.toModel())...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }

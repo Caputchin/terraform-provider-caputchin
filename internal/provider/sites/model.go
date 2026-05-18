@@ -17,7 +17,7 @@ type siteModel struct {
 	ID        types.String `tfsdk:"id"`
 	Key       types.String `tfsdk:"key"`
 	Name      types.String `tfsdk:"name"`
-	TeamID    types.String `tfsdk:"team_id"`
+	TroopID    types.String `tfsdk:"troop_id"`
 	Tier      types.String `tfsdk:"tier"`
 	Disabled  types.Bool   `tfsdk:"disabled"`
 	CreatedAt types.Int64  `tfsdk:"created_at"`
@@ -34,7 +34,7 @@ type apiSite struct {
 	ID        string `json:"id"`
 	Key       string `json:"key"`
 	Name      string `json:"name"`
-	TeamID    string `json:"team_id"`
+	TroopID    string `json:"troop_id"`
 	Tier      string `json:"tier"`
 	Disabled  bool   `json:"disabled"`
 	CreatedAt int64  `json:"created_at"`
@@ -48,7 +48,7 @@ func (s apiSite) toModel(secret types.String) siteModel {
 		ID:        types.StringValue(s.ID),
 		Key:       types.StringValue(s.Key),
 		Name:      types.StringValue(s.Name),
-		TeamID:    types.StringValue(s.TeamID),
+		TroopID:    types.StringValue(s.TroopID),
 		Tier:      types.StringValue(s.Tier),
 		Disabled:  types.BoolValue(s.Disabled),
 		CreatedAt: types.Int64Value(s.CreatedAt),

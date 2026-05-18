@@ -34,7 +34,7 @@ func (d *siteDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 			"id":         schema.StringAttribute{Required: true, Description: "Site identifier."},
 			"key":        schema.StringAttribute{Computed: true, Description: "Public site key embedded in the widget."},
 			"name":       schema.StringAttribute{Computed: true, Description: "Human-readable site name."},
-			"team_id":    schema.StringAttribute{Computed: true, Description: "Owning team identifier."},
+			"troop_id":    schema.StringAttribute{Computed: true, Description: "Owning troop identifier."},
 			"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning team."},
 			"disabled":   schema.BoolAttribute{Computed: true, Description: "Whether the site key is disabled."},
 			"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
@@ -78,7 +78,7 @@ func (d *siteDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		ID        types.String `tfsdk:"id"`
 		Key       types.String `tfsdk:"key"`
 		Name      types.String `tfsdk:"name"`
-		TeamID    types.String `tfsdk:"team_id"`
+		TroopID    types.String `tfsdk:"troop_id"`
 		Tier      types.String `tfsdk:"tier"`
 		Disabled  types.Bool   `tfsdk:"disabled"`
 		CreatedAt types.Int64  `tfsdk:"created_at"`
@@ -86,7 +86,7 @@ func (d *siteDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		ID:        types.StringValue(env.Site.ID),
 		Key:       types.StringValue(env.Site.Key),
 		Name:      types.StringValue(env.Site.Name),
-		TeamID:    types.StringValue(env.Site.TeamID),
+		TroopID:    types.StringValue(env.Site.TroopID),
 		Tier:      types.StringValue(env.Site.Tier),
 		Disabled:  types.BoolValue(env.Site.Disabled),
 		CreatedAt: types.Int64Value(env.Site.CreatedAt),

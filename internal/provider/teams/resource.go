@@ -26,7 +26,7 @@ type teamResource struct {
 }
 
 func (r *teamResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_team"
+	resp.TypeName = req.ProviderTypeName + "_troop"
 }
 
 func (r *teamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -52,7 +52,7 @@ func (r *teamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"kind": schema.StringAttribute{
-				Description: "Team kind. Always `shared` for resources managed by this provider.",
+				Description: "Troop kind. Always `shared` for resources managed by this provider.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -89,7 +89,7 @@ func (r *teamResource) Configure(_ context.Context, req resource.ConfigureReques
 }
 
 func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan teamModel
+	var plan troopModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -97,12 +97,12 @@ func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	body := map[string]any{"name": plan.Name.ValueString()}
 	var env teamEnvelope
-	if err := r.client.Post(ctx, "/v1/management/teams", body, &env); err != nil {
-		resp.Diagnostics.AddError("team-create-failed", err.Error())
+	if err := r.client.Post(ctx, "/v1/management/troops", body, &env); err != nil {
+		resp.Diagnostics.AddError("troop-create-failed", err.Error())
 		return
 	}
 
-	if env.Team.Kind == "personal" {
+	if env.Troop.Kind == "personal" {
 		// Defensive — the route only creates shared teams, but if a future
 		// API change ever returns a personal team here we want the surprise
 		// surfaced loudly rather than silently stored in state.
@@ -113,32 +113,32 @@ func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, env.Team.toModel())...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
 func (r *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state teamModel
+	var state troopModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var env teamEnvelope
-	err := r.client.Get(ctx, "/v1/management/teams/"+state.ID.ValueString(), &env)
+	err := r.client.Get(ctx, "/v1/management/troops/"+state.ID.ValueString(), &env)
 	if err != nil {
 		if client.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("team-read-failed", err.Error())
+		resp.Diagnostics.AddError("troop-read-failed", err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, env.Team.toModel())...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
 func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan teamModel
+	var plan troopModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -146,26 +146,26 @@ func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	body := map[string]any{"name": plan.Name.ValueString()}
 	var env teamEnvelope
-	if err := r.client.Patch(ctx, "/v1/management/teams/"+plan.ID.ValueString(), body, &env); err != nil {
-		resp.Diagnostics.AddError("team-update-failed", err.Error())
+	if err := r.client.Patch(ctx, "/v1/management/troops/"+plan.ID.ValueString(), body, &env); err != nil {
+		resp.Diagnostics.AddError("troop-update-failed", err.Error())
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, env.Team.toModel())...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
 func (r *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state teamModel
+	var state troopModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if err := r.client.Delete(ctx, "/v1/management/teams/"+state.ID.ValueString()); err != nil {
+	if err := r.client.Delete(ctx, "/v1/management/troops/"+state.ID.ValueString()); err != nil {
 		if client.IsNotFound(err) {
 			return
 		}
-		resp.Diagnostics.AddError("team-delete-failed", err.Error())
+		resp.Diagnostics.AddError("troop-delete-failed", err.Error())
 	}
 }
 

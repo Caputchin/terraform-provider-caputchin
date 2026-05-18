@@ -28,8 +28,8 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 		if in["name"] != "blog-prod" {
 			t.Errorf("expected name=blog-prod, got %q", in["name"])
 		}
-		if in["team_id"] != "team_abc" {
-			t.Errorf("expected team_id=team_abc, got %q", in["team_id"])
+		if in["troop_id"] != "team_abc" {
+			t.Errorf("expected troop_id=team_abc, got %q", in["troop_id"])
 		}
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -37,7 +37,7 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 				"id":         "site_xyz",
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-prod",
-				"team_id":    "team_abc",
+				"troop_id":    "team_abc",
 				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),
@@ -51,7 +51,7 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 	var env siteEnvelope
 	if err := c.Post(context.Background(), "/v1/management/sites", map[string]string{
 		"name":    "blog-prod",
-		"team_id": "team_abc",
+		"troop_id": "team_abc",
 	}, &env); err != nil {
 		t.Fatalf("post failed: %v", err)
 	}
@@ -74,8 +74,8 @@ func TestSiteUpdate_OnlySendsChangedFields(t *testing.T) {
 		body, _ := io.ReadAll(r.Body)
 		var in map[string]any
 		_ = json.Unmarshal(body, &in)
-		if _, ok := in["team_id"]; ok {
-			t.Errorf("Update body must NOT include team_id (immutable)")
+		if _, ok := in["troop_id"]; ok {
+			t.Errorf("Update body must NOT include troop_id (immutable)")
 		}
 		if _, ok := in["name"]; !ok {
 			t.Errorf("expected name in update body")
@@ -85,7 +85,7 @@ func TestSiteUpdate_OnlySendsChangedFields(t *testing.T) {
 				"id":         "site_xyz",
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-staging",
-				"team_id":    "team_abc",
+				"troop_id":    "team_abc",
 				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),
@@ -136,7 +136,7 @@ func TestSiteDelete_HappyPath(t *testing.T) {
 
 func TestApiSite_ToModel_PreservesSecret(t *testing.T) {
 	src := apiSite{
-		ID: "site_x", Key: "cpt_pub_x", Name: "n", TeamID: "team_x",
+		ID: "site_x", Key: "cpt_pub_x", Name: "n", TroopID: "team_x",
 		Tier: "troop", Disabled: false, CreatedAt: 1747500000000,
 	}
 	got := src.toModel(types.StringValue("cpt_sec_preserved"))
