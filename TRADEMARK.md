@@ -2,7 +2,7 @@
 
 This file is a copy of the canonical guidelines published at <https://caputchin.com/legal/trademark>.
 
-**Status:** "Caputchin" and the marks listed below are owned by **Praxalab** ([praxalab.com](https://praxalab.com)), an Australian business that operates the Caputchin product. They are common-law trademarks held through continuous use in commerce. Our enforcement layer is common-law trademark plus these guidelines plus the trademark-non-grant clauses in MPL-2.0 §1.10 + §3.4. We can send cease-and-desist letters and file platform takedowns.
+**Status:** "Caputchin" and the marks listed below are owned by **Praxalab** ([praxalab.com](https://praxalab.com)), an Australian business that operates the Caputchin product. They are common-law trademarks held through continuous use in commerce. Our enforcement layer is common-law trademark plus these guidelines plus the trademark-non-grant clauses in MPL-2.0 §2.3. We can send cease-and-desist letters and file platform takedowns.
 
 ## Underlying principle
 
@@ -45,7 +45,7 @@ We ask that the following uses get our written permission first. Some are backed
 - **Using the marks in advertising, marketing, or promotional contexts for a competing product.** Even where individual elements above would otherwise be fine, using "Caputchin" to drive comparison-shopping traffic toward a substitute CAPTCHA or verification product needs prior agreement.
 - **Trademark, service mark, or domain registration** of "Caputchin" or confusingly similar variants in any jurisdiction.
 
-The MPL-2.0 license under which this code is distributed grants no rights to use the marks (§1.10 and §3.4).
+The MPL-2.0 license under which this code is distributed grants no rights to use the marks (§2.3).
 
 ## Code identifier vs marketed product name (disambiguation)
 
