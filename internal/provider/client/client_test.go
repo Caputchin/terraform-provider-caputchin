@@ -81,7 +81,7 @@ func TestClient_DeleteIgnoresEmptyBody(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	c := NewClient(srv.URL, "cpt_pat_test", "test")
-	if err := c.Delete(context.Background(), "/v1/management/troops/team_x"); err != nil {
+	if err := c.Delete(context.Background(), "/v1/management/troops/troop_x"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

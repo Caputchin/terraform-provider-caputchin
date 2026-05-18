@@ -35,7 +35,7 @@ func TestTeamCreate_HappyPath(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"troop": map[string]any{
-				"id":         "team_abc",
+				"id":         "troop_abc",
 				"account_id": "acct_x",
 				"kind":       "shared",
 				"name":       "marketing",
@@ -51,8 +51,8 @@ func TestTeamCreate_HappyPath(t *testing.T) {
 	if err := c.Post(context.Background(), "/v1/management/troops", map[string]string{"name": "marketing"}, &env); err != nil {
 		t.Fatalf("post failed: %v", err)
 	}
-	if env.Troop.ID != "team_abc" {
-		t.Errorf("expected id=team_abc, got %q", env.Troop.ID)
+	if env.Troop.ID != "troop_abc" {
+		t.Errorf("expected id=troop_abc, got %q", env.Troop.ID)
 	}
 	if env.Troop.Kind != "shared" {
 		t.Errorf("expected kind=shared, got %q", env.Troop.Kind)
@@ -71,7 +71,7 @@ func TestTeamRead_NotFoundClearsState(t *testing.T) {
 
 	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
 	var env teamEnvelope
-	err := c.Get(context.Background(), "/v1/management/troops/team_gone", &env)
+	err := c.Get(context.Background(), "/v1/management/troops/troop_gone", &env)
 	if !client.IsNotFound(err) {
 		t.Fatalf("expected IsNotFound, got %v", err)
 	}
@@ -136,7 +136,7 @@ func TestTeamDelete_Succeeds(t *testing.T) {
 
 func TestApiTeam_ToModel(t *testing.T) {
 	src := apiTroop{
-		ID:        "team_abc",
+		ID:        "troop_abc",
 		Name:      "ops",
 		AccountID: "acct_x",
 		Kind:      "shared",
@@ -144,7 +144,7 @@ func TestApiTeam_ToModel(t *testing.T) {
 		CreatedAt: 1747500000000,
 	}
 	got := src.toModel()
-	if got.ID.ValueString() != "team_abc" {
+	if got.ID.ValueString() != "troop_abc" {
 		t.Errorf("ID: got %s", got.ID.ValueString())
 	}
 	if got.Tier.ValueString() != "apex" {
