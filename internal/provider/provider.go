@@ -92,6 +92,8 @@ func (p *caputchinProvider) Configure(ctx context.Context, req provider.Configur
 func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		troops.NewResource,
+		troops.NewMemberResource,
+		troops.NewPatResource,
 		sites.NewResource,
 		sites.NewConfigResource,
 		tokens.NewResource,

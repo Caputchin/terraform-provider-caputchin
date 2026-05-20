@@ -3,12 +3,12 @@
 page_title: "caputchin_account_token Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint — changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
+  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
 ---
 
 # caputchin_account_token (Resource)
 
-A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint — changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
+A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
 
 ## Example Usage
 
@@ -38,15 +38,15 @@ output "ci_prod_token" {
 
 ### Required
 
-- `name` (String) Human-readable token name. Immutable — the management API has no PATCH on tokens; changing this attribute forces replacement.
+- `name` (String) Human-readable token name. Immutable (the management API has no PATCH on tokens); changing this attribute forces replacement.
 
 ### Optional
 
-- `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope, takes one PAT seat). Defaults to `troop`. Immutable — changing forces replacement.
+- `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope, takes one PAT seat). Defaults to `troop`. Immutable; changing forces replacement.
 
 ### Read-Only
 
 - `created_at` (Number) Creation timestamp in milliseconds since the Unix epoch.
 - `id` (String) Server-issued token identifier.
 - `prefix` (String) Display-friendly prefix of the token value (first 16 chars).
-- `secret` (String, Sensitive) Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered — destroy and recreate the resource to mint a new token.
+- `secret` (String, Sensitive) Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered; destroy and recreate the resource to mint a new token.

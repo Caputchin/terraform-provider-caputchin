@@ -33,7 +33,7 @@ func (r *tokenResource) Metadata(_ context.Context, req resource.MetadataRequest
 
 func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint — changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
+		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued token identifier.",
@@ -43,14 +43,14 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Human-readable token name. Immutable — the management API has no PATCH on tokens; changing this attribute forces replacement.",
+				Description: "Human-readable token name. Immutable (the management API has no PATCH on tokens); changing this attribute forces replacement.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"type": schema.StringAttribute{
-				Description: "Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope, takes one PAT seat). Defaults to `troop`. Immutable — changing forces replacement.",
+				Description: "Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope, takes one PAT seat). Defaults to `troop`. Immutable; changing forces replacement.",
 				Optional:    true,
 				Computed:    true,
 				Default:     stringdefault.StaticString("troop"),
@@ -66,7 +66,7 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"secret": schema.StringAttribute{
-				Description: "Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered — destroy and recreate the resource to mint a new token.",
+				Description: "Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered; destroy and recreate the resource to mint a new token.",
 				Computed:    true,
 				Sensitive:   true,
 				PlanModifiers: []planmodifier.String{
