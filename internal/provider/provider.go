@@ -17,6 +17,7 @@ import (
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/account"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/sites"
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/tokens"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/troops"
 )
 
@@ -93,6 +94,7 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 		troops.NewResource,
 		sites.NewResource,
 		sites.NewConfigResource,
+		tokens.NewResource,
 	}
 }
 
