@@ -96,6 +96,7 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 		troops.NewPatResource,
 		sites.NewResource,
 		sites.NewConfigResource,
+		sites.NewHostedVerificationResource,
 		tokens.NewResource,
 	}
 }
@@ -103,7 +104,9 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 func (p *caputchinProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		troops.NewDataSource,
+		troops.NewListDataSource,
 		sites.NewDataSource,
+		sites.NewListDataSource,
 		sites.NewStatsDataSource,
 		account.NewDataSource,
 	}
