@@ -20,11 +20,41 @@ resource "caputchin_troop" "marketing" {
 resource "caputchin_site_key" "blog" {
   name     = "blog-prod"
   troop_id = caputchin_troop.marketing.id
+
+  # Bump this to trigger an in-place secret rotation (ADR-0051). The
+  # site `id` and public `key` stay the same; only the `secret`
+  # changes. Initial Create ignores the value (the mint already
+  # returns a fresh secret).
+  secret_version = 1
 }
 
-# Hand the secret to your backend's secrets manager (Vault / Doppler /
-# Infisical / AWS Secrets Manager / etc.). The secret is returned only at
-# creation time — rotate the key if you lose it.
+# Scheduled rotation: time_rotating + terraform_data intermediary +
+# replace_triggered_by (the direct time_rotating + replace_triggered_by
+# path is broken upstream per terraform-provider-time issue #118, open
+# since 2022). When the trigger fires, rotation_triggers forces full
+# replacement of the site key (new id, new key, new secret); for in-
+# place rotation, bump secret_version instead.
+resource "time_rotating" "schedule" {
+  rotation_days = 90
+}
+
+resource "terraform_data" "rotation_stamp" {
+  triggers_replace = {
+    stamp = time_rotating.schedule.rotation_rfc3339
+  }
+}
+
+resource "caputchin_site_key" "blog_scheduled" {
+  name     = "blog-scheduled-prod"
+  troop_id = caputchin_troop.marketing.id
+
+  rotation_triggers = {
+    schedule = terraform_data.rotation_stamp.output.stamp
+  }
+}
+
+# Hand the secret to your secrets manager. Sensitive but lands in
+# Terraform state (ADR-0051); treat the state file as secret-bearing.
 output "blog_site_secret" {
   value     = caputchin_site_key.blog.secret
   sensitive = true
@@ -46,11 +76,13 @@ output "blog_site_public_key" {
 ### Optional
 
 - `disabled` (Boolean) Whether the site key is disabled. Disabled keys still exist but reject verification calls. Defaults to `false`.
+- `rotation_triggers` (Map of String) Arbitrary map of string-string pairs. Any change forces full replacement of the site key (Delete + Create), yielding a fresh `id`, `key`, and `secret`. Use this for compromised-key recovery where a new public key is also required; for routine secret-only rotation, bump `secret_version` instead.
+- `secret_version` (Number) Provider-tracked rotation counter (ADR-0051). Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).
 
 ### Read-Only
 
 - `created_at` (Number) Creation timestamp in milliseconds since the Unix epoch.
 - `id` (String) Server-issued site identifier.
 - `key` (String) Public site key (the value embedded in the widget on the customer's site).
-- `secret` (String, Sensitive) Secret used to authenticate server-side verification calls. Returned only at creation time; stored sensitively in state. Use the rotate-secret resource action to issue a new value (available in a later release).
+- `secret` (String, Sensitive) Secret used to authenticate server-side verification calls. Returned at creation time and on every rotation; stored sensitively in state. Treat the Terraform state file as secret-bearing.
 - `tier` (String) Plan tier inherited from the owning troop. Read-only.

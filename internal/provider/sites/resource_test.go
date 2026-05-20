@@ -139,12 +139,15 @@ func TestApiSite_ToModel_PreservesSecret(t *testing.T) {
 		ID: "site_x", Key: "cpt_pub_x", Name: "n", TroopID: "troop_x",
 		Tier: "troop", Disabled: false, CreatedAt: 1747500000000,
 	}
-	got := src.toModel(types.StringValue("cpt_sec_preserved"))
+	got := src.toModel(types.StringValue("cpt_sec_preserved"), types.Int64Value(0), types.MapNull(types.StringType))
 	if got.Secret.ValueString() != "cpt_sec_preserved" {
 		t.Errorf("expected secret preserved, got %q", got.Secret.ValueString())
 	}
 	if got.Disabled.ValueBool() != false {
 		t.Errorf("expected disabled=false, got true")
+	}
+	if got.SecretVersion.ValueInt64() != 0 {
+		t.Errorf("expected secret_version=0, got %d", got.SecretVersion.ValueInt64())
 	}
 }
 
@@ -153,8 +156,34 @@ func TestApiSite_ToModel_NullSecret(t *testing.T) {
 	// produces a null state attr — Read then refreshes other fields without
 	// touching the secret.
 	src := apiSite{ID: "site_x"}
-	got := src.toModel(types.StringNull())
+	got := src.toModel(types.StringNull(), types.Int64Value(0), types.MapNull(types.StringType))
 	if !got.Secret.IsNull() {
 		t.Errorf("expected null secret, got %v", got.Secret)
+	}
+}
+
+// TestRotateSecret_HappyPath exercises the POST /sites/{id}/rotate-secret
+// wire contract via the client directly. The provider's Update branch
+// for secret_version bumps is exercised end-to-end at the acceptance
+// layer; this test pins the wire shape so a route-side rename of
+// `secret` would surface here.
+func TestRotateSecret_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/management/sites/site_xyz/rotate-secret" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"secret": "cpt_sec_rotated"})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env struct {
+		Secret string `json:"secret"`
+	}
+	if err := c.Post(context.Background(), "/v1/management/sites/site_xyz/rotate-secret", map[string]any{}, &env); err != nil {
+		t.Fatalf("rotate post failed: %v", err)
+	}
+	if env.Secret != "cpt_sec_rotated" {
+		t.Errorf("expected secret=cpt_sec_rotated, got %q", env.Secret)
 	}
 }

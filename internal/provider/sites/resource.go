@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -78,11 +80,25 @@ func (r *siteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"secret": schema.StringAttribute{
-				Description: "Secret used to authenticate server-side verification calls. Returned only at creation time; stored sensitively in state. Use the rotate-secret resource action to issue a new value (available in a later release).",
+				Description: "Secret used to authenticate server-side verification calls. Returned at creation time and on every rotation; stored sensitively in state. Treat the Terraform state file as secret-bearing.",
 				Computed:    true,
 				Sensitive:   true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"secret_version": schema.Int64Attribute{
+				Description: "Provider-tracked rotation counter (ADR-0051). Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(0),
+			},
+			"rotation_triggers": schema.MapAttribute{
+				Description: "Arbitrary map of string-string pairs. Any change forces full replacement of the site key (Delete + Create), yielding a fresh `id`, `key`, and `secret`. Use this for compromised-key recovery where a new public key is also required; for routine secret-only rotation, bump `secret_version` instead.",
+				ElementType: types.StringType,
+				Optional:    true,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.RequiresReplace(),
 				},
 			},
 		},
@@ -129,7 +145,20 @@ func (r *siteResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	state := env.Site.toModel(types.StringValue(env.Secret))
+	// Persist the planned secret_version (or its default 0) and the
+	// planned rotation_triggers map. Initial Create does NOT call
+	// rotate-secret regardless of the planned secret_version (the mint
+	// already returns a fresh secret) — the provider just records the
+	// version so future bumps fire the rotation branch in Update.
+	rotationTriggers := plan.RotationTriggers
+	if rotationTriggers.IsNull() || rotationTriggers.IsUnknown() {
+		rotationTriggers = types.MapNull(types.StringType)
+	}
+	secretVersion := plan.SecretVersion
+	if secretVersion.IsNull() || secretVersion.IsUnknown() {
+		secretVersion = types.Int64Value(0)
+	}
+	state := env.Site.toModel(types.StringValue(env.Secret), secretVersion, rotationTriggers)
 	// disabled defaults to false on create; the API does not echo it for fresh
 	// rows because there's no `disabledAt` yet. The toModel projection already
 	// reads bool from the wire (`false` zero-value when absent), which matches
@@ -155,7 +184,9 @@ func (r *siteResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	// Preserve the secret already in state — Read never returns it.
-	refreshed := env.Site.toModel(state.Secret)
+	// Same for the provider-tracked rotation fields (the API has no
+	// notion of these; they live entirely in state).
+	refreshed := env.Site.toModel(state.Secret, state.SecretVersion, state.RotationTriggers)
 	resp.Diagnostics.Append(resp.State.Set(ctx, refreshed)...)
 }
 
@@ -167,6 +198,43 @@ func (r *siteResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	// Carry the planned rotation knobs forward; default missing values
+	// the same way Create does. rotation_triggers changes are handled
+	// by RequiresReplace, so by the time Update fires the trigger map
+	// already matches state.
+	rotationTriggers := plan.RotationTriggers
+	if rotationTriggers.IsNull() || rotationTriggers.IsUnknown() {
+		rotationTriggers = state.RotationTriggers
+	}
+	plannedVersion := plan.SecretVersion
+	if plannedVersion.IsNull() || plannedVersion.IsUnknown() {
+		plannedVersion = state.SecretVersion
+	}
+
+	// Secret rotation branch (ADR-0051). If the planned secret_version
+	// differs from state, call POST /sites/{id}/rotate-secret first;
+	// the route mutates in place and returns a fresh secret. Other
+	// field changes (name, disabled) follow via PATCH below; both
+	// branches may fire in the same Update.
+	secret := state.Secret
+	if plannedVersion.ValueInt64() != state.SecretVersion.ValueInt64() {
+		var rotEnv struct {
+			Secret string `json:"secret"`
+		}
+		if err := r.client.Post(ctx, "/v1/management/sites/"+state.ID.ValueString()+"/rotate-secret", map[string]any{}, &rotEnv); err != nil {
+			resp.Diagnostics.AddError("site-rotate-failed", err.Error())
+			return
+		}
+		if rotEnv.Secret == "" {
+			resp.Diagnostics.AddError(
+				"missing-secret-on-rotate",
+				"The management API did not return a secret value from rotate-secret. This is a provider/API contract violation.",
+			)
+			return
+		}
+		secret = types.StringValue(rotEnv.Secret)
+	}
+
 	body := map[string]any{}
 	if plan.Name.ValueString() != state.Name.ValueString() {
 		body["name"] = plan.Name.ValueString()
@@ -176,8 +244,26 @@ func (r *siteResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	if len(body) == 0 {
-		// Nothing to send; just persist plan over state (e.g. drift in a
-		// Computed field that nothing actually changed).
+		// No PATCH-shaped changes. If rotation already ran, persist the
+		// new secret + bumped version; otherwise just carry plan over
+		// state (drift in a Computed field that nothing actually
+		// changed).
+		if plannedVersion.ValueInt64() != state.SecretVersion.ValueInt64() {
+			refreshed := siteModel{
+				ID:               state.ID,
+				Key:              state.Key,
+				Name:             state.Name,
+				TroopID:          state.TroopID,
+				Tier:             state.Tier,
+				Disabled:         state.Disabled,
+				CreatedAt:        state.CreatedAt,
+				Secret:           secret,
+				SecretVersion:    plannedVersion,
+				RotationTriggers: rotationTriggers,
+			}
+			resp.Diagnostics.Append(resp.State.Set(ctx, refreshed)...)
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 		return
 	}
@@ -188,7 +274,7 @@ func (r *siteResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	refreshed := env.Site.toModel(state.Secret)
+	refreshed := env.Site.toModel(secret, plannedVersion, rotationTriggers)
 	resp.Diagnostics.Append(resp.State.Set(ctx, refreshed)...)
 }
 
@@ -208,10 +294,12 @@ func (r *siteResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 func (r *siteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	// The imported row has no secret in state — Read won't populate it because
-	// the API never returns it after the initial create. Customers must rotate
-	// the secret to recover a usable value (rotate-secret action lands in a
-	// later release; for v0.1 importers can issue a manual rotate via the
-	// dashboard or OpenAPI client).
+	// The imported row has no secret in state — Read won't populate it
+	// because the API never returns it after the initial create.
+	// Customers recover by bumping secret_version on the next plan,
+	// which fires the rotation branch in Update (ADR-0051) and writes a
+	// fresh value into state.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret"), types.StringNull())...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret_version"), types.Int64Value(0))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("rotation_triggers"), types.MapNull(types.StringType))...)
 }
