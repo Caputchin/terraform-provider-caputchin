@@ -31,7 +31,7 @@ func (r *troopResource) Metadata(_ context.Context, req resource.MetadataRequest
 
 func (r *troopResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin troop — the tenant boundary that owns site keys. Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.",
+		Description: "A Caputchin troop (the tenant boundary that owns site keys). Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued troop identifier.",
@@ -103,7 +103,7 @@ func (r *troopResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	if env.Troop.Kind == "personal" {
-		// Defensive — the route only creates shared troops, but if a future
+		// Defensive: the route only creates shared troops, but if a future
 		// API change ever returns a personal troop here we want the surprise
 		// surfaced loudly rather than silently stored in state.
 		resp.Diagnostics.AddError(

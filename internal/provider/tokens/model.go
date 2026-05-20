@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-// Package tokens implements the caputchin_account_token resource — minting
+// Package tokens implements the caputchin_account_token resource: minting
 // and revoking management tokens (`account` and `troop` types per
 // ADR-0028). Attachment of troop-PATs to specific troops happens via the
 // caputchin_troop_pat resource in the `troops` package.
@@ -44,7 +44,7 @@ type apiTokenWithValue struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
-// apiToken is the wire shape returned by GET /tokens — no secret.
+// apiToken is the wire shape returned by GET /tokens (no secret).
 type apiToken struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`

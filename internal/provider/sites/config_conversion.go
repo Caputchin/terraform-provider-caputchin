@@ -133,7 +133,7 @@ func changedList(plan, state types.List) bool {
 	return !plan.Equal(state)
 }
 
-// listOrNull returns either nil (for a Null list — sent as JSON null to
+// listOrNull returns either nil (for a Null list, sent as JSON null to
 // clear the field) or the slice of string values.
 func listOrNull(l types.List) any {
 	if l.IsNull() {

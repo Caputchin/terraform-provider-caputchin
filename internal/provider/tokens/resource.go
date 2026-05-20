@@ -160,7 +160,7 @@ func (r *tokenResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		if row.ID != id {
 			continue
 		}
-		// Preserve the secret — Read never returns it.
+		// Preserve the secret; Read never returns it.
 		resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
 			ID:        types.StringValue(row.ID),
 			Name:      types.StringValue(row.Name),
@@ -197,7 +197,7 @@ func (r *tokenResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 func (r *tokenResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	// The imported row has no secret in state — the API never returns it
+	// The imported row has no secret in state; the API never returns it
 	// after the initial mint. Importing recovers metadata (name, type,
 	// prefix, created_at) but the secret is unrecoverable; destroy and
 	// recreate the resource to mint a usable token.

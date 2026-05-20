@@ -90,7 +90,7 @@ func patMembershipToModel(ctx context.Context, m apiPatMembership, diags *diag.D
 
 // memberMembershipToModel projects an apiUserMembership wire object into
 // the Terraform state shape. Callers must check `m.Email == nil` and
-// remove the resource from state before invoking this — a null email
+// remove the resource from state before invoking this; a null email
 // from the wire indicates a vanished account and the membership should
 // not be projected into state.
 //

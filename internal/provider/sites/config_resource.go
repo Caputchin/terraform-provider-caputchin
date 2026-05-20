@@ -34,7 +34,7 @@ func (r *siteConfigResource) Metadata(_ context.Context, req resource.MetadataRe
 
 func (r *siteConfigResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Per-site configuration for a Caputchin site key. Singleton — one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.\n\nDefine exactly one `caputchin_site_config` per `site_id` — concurrent resources targeting the same site will race on update.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side configuration; values set via this resource remain in effect until explicitly changed.",
+		Description: "Per-site configuration for a Caputchin site key. Singleton: one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.\n\nDefine exactly one `caputchin_site_config` per `site_id`; concurrent resources targeting the same site will race on update.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side configuration; values set via this resource remain in effect until explicitly changed.",
 		Attributes: map[string]schema.Attribute{
 			"site_id": schema.StringAttribute{
 				Description: "Identifier of the site this configuration belongs to. Changing this attribute forces replacement.",
@@ -173,14 +173,14 @@ func (r *siteConfigResource) Update(ctx context.Context, req resource.UpdateRequ
 	})
 }
 
-// Delete removes the resource from Terraform state only — there is no
+// Delete removes the resource from Terraform state only. There is no
 // server-side delete for a singleton config (the site keeps whatever values
 // the config currently holds, including defaults).
 func (r *siteConfigResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 }
 
 func (r *siteConfigResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import id IS the site id — the resource is singleton-per-site.
+	// Import id IS the site id (the resource is singleton-per-site).
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("site_id"), req.ID)...)
 }
 
@@ -200,7 +200,7 @@ func (r *siteConfigResource) refreshState(ctx context.Context, siteIDTF types.St
 
 // buildPatchBody assembles the PATCH body containing only the fields whose
 // plan value differs from the prior state value. On Create, state is the
-// zero-value siteConfigModel — every plan-set field is treated as a change.
+// zero-value siteConfigModel; every plan-set field is treated as a change.
 func (r *siteConfigResource) buildPatchBody(plan, state siteConfigModel) map[string]any {
 	body := map[string]any{}
 

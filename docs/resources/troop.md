@@ -3,12 +3,12 @@
 page_title: "caputchin_troop Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  A Caputchin troop — the tenant boundary that owns site keys. Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.
+  A Caputchin troop (the tenant boundary that owns site keys). Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.
 ---
 
 # caputchin_troop (Resource)
 
-A Caputchin troop — the tenant boundary that owns site keys. Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.
+A Caputchin troop (the tenant boundary that owns site keys). Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.
 
 ## Example Usage
 

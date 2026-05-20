@@ -148,7 +148,7 @@ func (r *siteResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// Persist the planned secret_version (or its default 0) and the
 	// planned rotation_triggers map. Initial Create does NOT call
 	// rotate-secret regardless of the planned secret_version (the mint
-	// already returns a fresh secret) — the provider just records the
+	// already returns a fresh secret); the provider just records the
 	// version so future bumps fire the rotation branch in Update.
 	rotationTriggers := plan.RotationTriggers
 	if rotationTriggers.IsNull() || rotationTriggers.IsUnknown() {
@@ -183,7 +183,7 @@ func (r *siteResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	// Preserve the secret already in state — Read never returns it.
+	// Preserve the secret already in state; Read never returns it.
 	// Same for the provider-tracked rotation fields (the API has no
 	// notion of these; they live entirely in state).
 	refreshed := env.Site.toModel(state.Secret, state.SecretVersion, state.RotationTriggers)
@@ -294,7 +294,7 @@ func (r *siteResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 func (r *siteResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	// The imported row has no secret in state — Read won't populate it
+	// The imported row has no secret in state; Read won't populate it
 	// because the API never returns it after the initial create.
 	// Customers recover by bumping secret_version on the next plan,
 	// which fires the rotation branch in Update (ADR-0051) and writes a

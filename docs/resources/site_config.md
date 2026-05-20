@@ -3,16 +3,16 @@
 page_title: "caputchin_site_config Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  Per-site configuration for a Caputchin site key. Singleton — one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.
-  Define exactly one caputchin_site_config per site_id — concurrent resources targeting the same site will race on update.
+  Per-site configuration for a Caputchin site key. Singleton: one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.
+  Define exactly one caputchin_site_config per site_id; concurrent resources targeting the same site will race on update.
   Destroying this resource removes Terraform tracking but does NOT reset the server-side configuration; values set via this resource remain in effect until explicitly changed.
 ---
 
 # caputchin_site_config (Resource)
 
-Per-site configuration for a Caputchin site key. Singleton — one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.
+Per-site configuration for a Caputchin site key. Singleton: one configuration row per site. Fields you do not set retain the server-side defaults derived from the site's plan tier.
 
-Define exactly one `caputchin_site_config` per `site_id` — concurrent resources targeting the same site will race on update.
+Define exactly one `caputchin_site_config` per `site_id`; concurrent resources targeting the same site will race on update.
 
 Destroying this resource removes Terraform tracking but does NOT reset the server-side configuration; values set via this resource remain in effect until explicitly changed.
 
@@ -29,7 +29,7 @@ resource "caputchin_site_key" "blog" {
 }
 
 # Per-site configuration. Fields you omit retain the server-side defaults
-# derived from your plan tier — only set what you want to override.
+# derived from your plan tier; only set what you want to override.
 resource "caputchin_site_config" "blog" {
   site_id = caputchin_site_key.blog.id
 

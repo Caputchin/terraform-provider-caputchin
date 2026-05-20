@@ -153,7 +153,7 @@ func TestApiSite_ToModel_PreservesSecret(t *testing.T) {
 
 func TestApiSite_ToModel_NullSecret(t *testing.T) {
 	// Import path: secret unknown after import; toModel(types.StringNull())
-	// produces a null state attr — Read then refreshes other fields without
+	// produces a null state attr; Read then refreshes other fields without
 	// touching the secret.
 	src := apiSite{ID: "site_x"}
 	got := src.toModel(types.StringNull(), types.Int64Value(0), types.MapNull(types.StringType))

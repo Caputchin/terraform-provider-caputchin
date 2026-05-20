@@ -53,7 +53,7 @@ func TestSitesList_DecodesEnvelope(t *testing.T) {
 // TestSitesList_NamesOnlyRowDecodes documents the mixed-shape wire
 // contract: the platform's GET /sites emits a names-only shape for
 // manage-no-read memberships. The list data source's Read filters these
-// out, but the decode itself must NOT zero-fill — pointer fields stay
+// out, but the decode itself must NOT zero-fill; pointer fields stay
 // nil, and the data-source's iterator skip-on-nil keeps lies out of TF
 // state.
 func TestSitesList_NamesOnlyRowDecodes(t *testing.T) {

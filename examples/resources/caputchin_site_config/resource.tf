@@ -8,7 +8,7 @@ resource "caputchin_site_key" "blog" {
 }
 
 # Per-site configuration. Fields you omit retain the server-side defaults
-# derived from your plan tier — only set what you want to override.
+# derived from your plan tier; only set what you want to override.
 resource "caputchin_site_config" "blog" {
   site_id = caputchin_site_key.blog.id
 

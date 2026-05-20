@@ -29,7 +29,7 @@ type patResource struct {
 }
 
 // patPermsModel matches the API's perms object: create / edit / read /
-// manage booleans. All four are Required so plans are unambiguous —
+// manage booleans. All four are Required so plans are unambiguous;
 // stripping every perm is refused server-side with `no-perms-granted`.
 type patPermsModel struct {
 	Create types.Bool `tfsdk:"create"`
@@ -41,7 +41,7 @@ type patPermsModel struct {
 // patScopeModel matches the API's scope discriminated union via two
 // fields: `kind` is "full" or "partial"; `site_ids` is the per-site
 // allowlist when kind=partial and is ignored (kept null/empty) when
-// kind=full. The provider enforces the contract on the wire — Terraform
+// kind=full. The provider enforces the contract on the wire; Terraform
 // does not natively express discriminated unions.
 type patScopeModel struct {
 	Kind    types.String `tfsdk:"kind"`
@@ -283,7 +283,7 @@ func (r *patResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 }
 
 func (r *patResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import expects "<troop_id>:<membership_id>" — the membership row is
+	// Import expects "<troop_id>:<membership_id>"; the membership row is
 	// keyed by both because troop_id is path-scoped on every CRUD call.
 	parts := splitImportID(req.ID)
 	if len(parts) != 2 {

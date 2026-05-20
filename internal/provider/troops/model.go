@@ -28,7 +28,7 @@ type troopEnvelope struct {
 
 // apiTroop is the raw wire shape (no Terraform tag indirection) used purely
 // for JSON decoding. troopModel uses Terraform types and cannot be unmarshalled
-// directly without custom UnmarshalJSON plumbing — keeping them separate is
+// directly without custom UnmarshalJSON plumbing; keeping them separate is
 // cheaper.
 type apiTroop struct {
 	ID        string `json:"id"`
