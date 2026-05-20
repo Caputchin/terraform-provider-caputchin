@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
@@ -150,6 +152,9 @@ func (r *patResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 					"kind": schema.StringAttribute{
 						Required:    true,
 						Description: "`full` or `partial`.",
+						Validators: []validator.String{
+							stringvalidator.OneOf("full", "partial"),
+						},
 					},
 					"site_ids": schema.ListAttribute{
 						ElementType: types.StringType,

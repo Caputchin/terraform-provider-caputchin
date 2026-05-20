@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/util"
 )
 
 // buildPatRequestBody renders the perms + scope sub-objects into the
@@ -62,16 +64,6 @@ func buildMemberRequestBody(ctx context.Context, plan memberModel, diags *diag.D
 	return body
 }
 
-// nullableString projects a `*string` (e.g., from a json:"foo"-tagged
-// pointer field) into a Terraform String. A nil pointer maps to
-// `types.StringNull()`; a non-nil pointer maps to `types.StringValue`.
-func nullableString(p *string) types.String {
-	if p == nil {
-		return types.StringNull()
-	}
-	return types.StringValue(*p)
-}
-
 // patMembershipToModel projects an apiPatMembership wire object into the
 // Terraform state shape.
 func patMembershipToModel(ctx context.Context, m apiPatMembership, diags *diag.Diagnostics) patModel {
@@ -81,8 +73,8 @@ func patMembershipToModel(ctx context.Context, m apiPatMembership, diags *diag.D
 		ID:        types.StringValue(m.ID),
 		TroopID:   types.StringValue(m.TroopID),
 		PatID:     types.StringValue(m.PatID),
-		PatName:   nullableString(m.PatName),
-		PatPrefix: nullableString(m.PatPrefix),
+		PatName:   util.NullableString(m.PatName),
+		PatPrefix: util.NullableString(m.PatPrefix),
 		Perms: &patPermsModel{
 			Create: types.BoolValue(m.Perms.Create),
 			Edit:   types.BoolValue(m.Perms.Edit),
@@ -101,13 +93,18 @@ func patMembershipToModel(ctx context.Context, m apiPatMembership, diags *diag.D
 // remove the resource from state before invoking this — a null email
 // from the wire indicates a vanished account and the membership should
 // not be projected into state.
-func memberMembershipToModel(ctx context.Context, m apiUserMembership, diags *diag.Diagnostics) memberModel {
+//
+// `wouldConsumeSeat` is a Create-time signal that the API echoes only
+// on POST /troops/{id}/members; subsequent GETs do not include it. The
+// resource Read/Update flow passes the prior state value through this
+// helper so the attribute survives refreshes.
+func memberMembershipToModel(ctx context.Context, m apiUserMembership, wouldConsumeSeat types.Bool, diags *diag.Diagnostics) memberModel {
 	siteIDsList, listDiags := types.ListValueFrom(ctx, types.StringType, m.Scope.SiteIDs)
 	diags.Append(listDiags...)
 	return memberModel{
 		ID:        types.StringValue(m.ID),
 		TroopID:   types.StringValue(m.TroopID),
-		Email:     nullableString(m.Email),
+		Email:     util.NullableString(m.Email),
 		AccountID: types.StringValue(m.AccountID),
 		Perms: &patPermsModel{
 			Create: types.BoolValue(m.Perms.Create),
@@ -119,6 +116,7 @@ func memberMembershipToModel(ctx context.Context, m apiUserMembership, diags *di
 			Kind:    types.StringValue(m.Scope.Kind),
 			SiteIDs: siteIDsList,
 		},
+		WouldConsumeSeat: wouldConsumeSeat,
 	}
 }
 

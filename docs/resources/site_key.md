@@ -3,12 +3,12 @@
 page_title: "caputchin_site_key Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  A Caputchin site key — the public/secret pair a customer embeds in their site and uses to verify users. troop_id is immutable; changing it forces replacement.
+  A Caputchin site key (the public/secret pair a customer embeds in their site and uses to verify users). troop_id is immutable; changing it forces replacement.
 ---
 
 # caputchin_site_key (Resource)
 
-A Caputchin site key — the public/secret pair a customer embeds in their site and uses to verify users. `troop_id` is immutable; changing it forces replacement.
+A Caputchin site key (the public/secret pair a customer embeds in their site and uses to verify users). `troop_id` is immutable; changing it forces replacement.
 
 ## Example Usage
 
@@ -71,7 +71,7 @@ output "blog_site_public_key" {
 ### Required
 
 - `name` (String) Human-readable site name. Modifiable in place.
-- `troop_id` (String) Identifier of the owning troop. Immutable — changing this attribute forces replacement of the site key.
+- `troop_id` (String) Identifier of the owning troop. Immutable; changing this attribute forces replacement of the site key.
 
 ### Optional
 

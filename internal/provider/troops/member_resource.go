@@ -7,11 +7,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
@@ -27,12 +30,13 @@ type memberResource struct {
 }
 
 type memberModel struct {
-	ID        types.String   `tfsdk:"id"`
-	TroopID   types.String   `tfsdk:"troop_id"`
-	Email     types.String   `tfsdk:"email"`
-	AccountID types.String   `tfsdk:"account_id"`
-	Perms     *patPermsModel `tfsdk:"perms"`
-	Scope     *patScopeModel `tfsdk:"scope"`
+	ID               types.String   `tfsdk:"id"`
+	TroopID          types.String   `tfsdk:"troop_id"`
+	Email            types.String   `tfsdk:"email"`
+	AccountID        types.String   `tfsdk:"account_id"`
+	Perms            *patPermsModel `tfsdk:"perms"`
+	Scope            *patScopeModel `tfsdk:"scope"`
+	WouldConsumeSeat types.Bool     `tfsdk:"would_consume_seat"`
 }
 
 // apiUserMembership is the wire shape returned by GET /troops/{id}/members
@@ -62,7 +66,8 @@ type apiUserMembership struct {
 }
 
 type memberEnvelope struct {
-	Member apiUserMembership `json:"member"`
+	Member           apiUserMembership `json:"member"`
+	WouldConsumeSeat bool              `json:"would_consume_seat"`
 }
 
 type memberListEnvelope struct {
@@ -105,6 +110,13 @@ func (r *memberResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"would_consume_seat": schema.BoolAttribute{
+				Description: "Whether this membership consumed a fresh user seat at creation time (per ADR-0023 + ADR-0031: sharing across troops within the same account is free, so subsequent memberships for an account already in another troop here come back as `false`). Snapshot at Create; preserved through subsequent reads (the management API does not echo it on GET).",
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"perms": schema.SingleNestedAttribute{
 				Description: "Permission set. Stripping every perm is refused.",
 				Required:    true,
@@ -122,6 +134,9 @@ func (r *memberResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					"kind": schema.StringAttribute{
 						Required:    true,
 						Description: "`full` or `partial`.",
+						Validators: []validator.String{
+							stringvalidator.OneOf("full", "partial"),
+						},
 					},
 					"site_ids": schema.ListAttribute{
 						ElementType: types.StringType,
@@ -169,7 +184,7 @@ func (r *memberResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, env.Member, &resp.Diagnostics))...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, env.Member, types.BoolValue(env.WouldConsumeSeat), &resp.Diagnostics))...)
 }
 
 func (r *memberResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -199,7 +214,7 @@ func (r *memberResource) Read(ctx context.Context, req resource.ReadRequest, res
 				resp.State.RemoveResource(ctx)
 				return
 			}
-			resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, m, &resp.Diagnostics))...)
+			resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, m, state.WouldConsumeSeat, &resp.Diagnostics))...)
 			return
 		}
 	}
@@ -237,7 +252,7 @@ func (r *memberResource) Update(ctx context.Context, req resource.UpdateRequest,
 				resp.State.RemoveResource(ctx)
 				return
 			}
-			resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, m, &resp.Diagnostics))...)
+			resp.Diagnostics.Append(resp.State.Set(ctx, memberMembershipToModel(ctx, m, state.WouldConsumeSeat, &resp.Diagnostics))...)
 			return
 		}
 	}
@@ -269,4 +284,10 @@ func (r *memberResource) ImportState(ctx context.Context, req resource.ImportSta
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("troop_id"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+	// would_consume_seat is a Create-time signal; the API doesn't echo
+	// it on GET, so we cannot reconstruct it from an imported row.
+	// Leave as null; future plans will see Unknown and the
+	// UseStateForUnknown plan modifier carries it forward without a
+	// spurious diff.
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("would_consume_seat"), types.BoolNull())...)
 }

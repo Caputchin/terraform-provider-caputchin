@@ -187,3 +187,27 @@ func TestRotateSecret_HappyPath(t *testing.T) {
 		t.Errorf("expected secret=cpt_sec_rotated, got %q", env.Secret)
 	}
 }
+
+// TestRotateSecret_EmptySecret pins the contract-violation guard for
+// the case where the management API returns a 200 with an absent /
+// empty `secret` field. The provider's Update branch refuses to write
+// an empty string into state and surfaces a `missing-secret-on-rotate`
+// diagnostic; this test fixes the wire shape that would trip that
+// guard.
+func TestRotateSecret_EmptySecret(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env struct {
+		Secret string `json:"secret"`
+	}
+	if err := c.Post(context.Background(), "/v1/management/sites/site_xyz/rotate-secret", map[string]any{}, &env); err != nil {
+		t.Fatalf("rotate post should succeed at the transport layer: %v", err)
+	}
+	if env.Secret != "" {
+		t.Errorf("expected empty secret to round-trip, got %q", env.Secret)
+	}
+}

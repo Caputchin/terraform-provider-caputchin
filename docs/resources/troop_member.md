@@ -49,6 +49,7 @@ resource "caputchin_troop_member" "alice" {
 
 - `account_id` (String) Account id of the invitee (resolved server-side by email).
 - `id` (String) Server-issued membership identifier.
+- `would_consume_seat` (Boolean) Whether this membership consumed a fresh user seat at creation time (per ADR-0023 + ADR-0031: sharing across troops within the same account is free, so subsequent memberships for an account already in another troop here come back as `false`). Snapshot at Create; preserved through subsequent reads (the management API does not echo it on GET).
 
 <a id="nestedatt--perms"></a>
 ### Nested Schema for `perms`

@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/util"
 )
 
 // NewHostedVerificationResource is the factory for the
@@ -135,8 +136,8 @@ func apiToModel(c apiHostedVerificationConfig) hostedVerificationModel {
 	model := hostedVerificationModel{
 		SiteID:     types.StringValue(c.SiteID),
 		Enabled:    types.BoolValue(c.Enabled),
-		WebhookURL: stringPtrToTF(c.WebhookURL),
-		EmailTo:    stringPtrToTF(c.EmailTo),
+		WebhookURL: util.NullableString(c.WebhookURL),
+		EmailTo:    util.NullableString(c.EmailTo),
 	}
 	if c.CreatedAt != nil {
 		model.CreatedAt = types.Int64Value(*c.CreatedAt)
@@ -149,13 +150,6 @@ func apiToModel(c apiHostedVerificationConfig) hostedVerificationModel {
 		model.UpdatedAt = types.Int64Null()
 	}
 	return model
-}
-
-func stringPtrToTF(p *string) types.String {
-	if p == nil {
-		return types.StringNull()
-	}
-	return types.StringValue(*p)
 }
 
 func (r *hostedVerificationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
