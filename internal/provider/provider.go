@@ -17,7 +17,7 @@ import (
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/account"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/sites"
-	"github.com/caputchin/terraform-provider-caputchin/internal/provider/teams"
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/troops"
 )
 
 const (
@@ -49,14 +49,14 @@ func (p *caputchinProvider) Metadata(_ context.Context, _ provider.MetadataReque
 
 func (p *caputchinProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manage Caputchin teams, site keys, per-site configuration, and read account / stats data.",
+		Description: "Manage Caputchin troops, site keys, per-site configuration, and read account / stats data.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Description: "Caputchin management API endpoint. Defaults to https://api.caputchin.com. May be overridden via the CAPUTCHIN_ENDPOINT environment variable.",
 				Optional:    true,
 			},
 			"management_token": schema.StringAttribute{
-				Description: "Caputchin management API token (account-PAT or team-PAT). May be supplied via the CAPUTCHIN_MANAGEMENT_TOKEN environment variable.",
+				Description: "Caputchin management API token (account-PAT or troop-PAT). May be supplied via the CAPUTCHIN_MANAGEMENT_TOKEN environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -90,7 +90,7 @@ func (p *caputchinProvider) Configure(ctx context.Context, req provider.Configur
 
 func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		teams.NewResource,
+		troops.NewResource,
 		sites.NewResource,
 		sites.NewConfigResource,
 	}
@@ -98,7 +98,7 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 
 func (p *caputchinProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		teams.NewDataSource,
+		troops.NewDataSource,
 		sites.NewDataSource,
 		sites.NewStatsDataSource,
 		account.NewDataSource,

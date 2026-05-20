@@ -54,14 +54,14 @@ func (r *siteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Required:    true,
 			},
 			"troop_id": schema.StringAttribute{
-				Description: "Identifier of the owning team. Immutable — changing this attribute forces replacement of the site key.",
+				Description: "Identifier of the owning troop. Immutable — changing this attribute forces replacement of the site key.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"tier": schema.StringAttribute{
-				Description: "Plan tier inherited from the owning team. Read-only.",
+				Description: "Plan tier inherited from the owning troop. Read-only.",
 				Computed:    true,
 			},
 			"disabled": schema.BoolAttribute{
@@ -112,7 +112,7 @@ func (r *siteResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	body := map[string]any{
-		"name":    plan.Name.ValueString(),
+		"name":     plan.Name.ValueString(),
 		"troop_id": plan.TroopID.ValueString(),
 	}
 	var env siteEnvelope

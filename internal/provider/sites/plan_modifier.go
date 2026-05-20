@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 )
 
-// int64UseStateForUnknown mirrors the helper in the teams package; the
+// int64UseStateForUnknown mirrors the helper in the troops package; the
 // framework lacks a stock int64 implementation.
 type int64UseStateForUnknown struct{}
 

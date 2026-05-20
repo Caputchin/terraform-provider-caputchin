@@ -2,7 +2,7 @@
 
 Official Terraform / OpenTofu provider for the [Caputchin](https://caputchin.com) management API.
 
-Manage Caputchin teams, site keys, per-site configuration, and read account / stats data from your Terraform or OpenTofu configurations.
+Manage Caputchin troops, site keys, per-site configuration, and read account / stats data from your Terraform or OpenTofu configurations.
 
 | Registry | Source address |
 |---|---|
@@ -17,7 +17,7 @@ Both consume the **same binary release**. The provider implements the standard T
 |---|---|
 | Terraform | 1.5+ |
 | OpenTofu | 1.6+ |
-| Caputchin management token | account-PAT or team-PAT — see [management API docs](https://caputchin.com/docs/management-api) |
+| Caputchin management token | account-PAT or troop-PAT — see [management API docs](https://caputchin.com/docs/management-api) |
 
 ## Quick start
 
@@ -40,13 +40,13 @@ provider "caputchin" {
   management_token = var.caputchin_pat
 }
 
-resource "caputchin_team" "marketing" {
+resource "caputchin_troop" "marketing" {
   name = "marketing"
 }
 
 resource "caputchin_site_key" "blog" {
-  name    = "blog-prod"
-  team_id = caputchin_team.marketing.id
+  name     = "blog-prod"
+  troop_id = caputchin_troop.marketing.id
 }
 
 resource "caputchin_site_config" "blog" {
@@ -70,11 +70,11 @@ output "site_secret" {
 
 | Type | Name | Purpose |
 |---|---|---|
-| Resource | `caputchin_team` | Tenant boundary. Create / read / rename / delete shared teams |
-| Resource | `caputchin_site_key` | Site key with rotatable secret. `team_id` is immutable (replace-on-change) |
+| Resource | `caputchin_troop` | Tenant boundary. Create / read / rename / delete shared troops |
+| Resource | `caputchin_site_key` | Site key with rotatable secret. `troop_id` is immutable (replace-on-change) |
 | Resource | `caputchin_site_config` | Per-site configuration (origin allowlist, PoW knobs, security filters, rate limit) |
 | Data source | `caputchin_account` | Current account metadata. Account-PAT or session only |
-| Data source | `caputchin_team` | Look up an existing team without owning it |
+| Data source | `caputchin_troop` | Look up an existing troop without owning it |
 | Data source | `caputchin_site_key` | Look up an existing site key without owning it |
 | Data source | `caputchin_site_stats` | Lifetime counters for a site key |
 

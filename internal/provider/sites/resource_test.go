@@ -37,7 +37,7 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 				"id":         "site_xyz",
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-prod",
-				"troop_id":    "troop_abc",
+				"troop_id":   "troop_abc",
 				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),
@@ -50,7 +50,7 @@ func TestSiteCreate_ReturnsSecret(t *testing.T) {
 	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
 	var env siteEnvelope
 	if err := c.Post(context.Background(), "/v1/management/sites", map[string]string{
-		"name":    "blog-prod",
+		"name":     "blog-prod",
 		"troop_id": "troop_abc",
 	}, &env); err != nil {
 		t.Fatalf("post failed: %v", err)
@@ -85,7 +85,7 @@ func TestSiteUpdate_OnlySendsChangedFields(t *testing.T) {
 				"id":         "site_xyz",
 				"key":        "cpt_pub_abc123",
 				"name":       "blog-staging",
-				"troop_id":    "troop_abc",
+				"troop_id":   "troop_abc",
 				"tier":       "troop",
 				"disabled":   false,
 				"created_at": int64(1747500000000),

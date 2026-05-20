@@ -41,14 +41,14 @@ func TestAccountRead_Decodes(t *testing.T) {
 	}
 }
 
-// TestAccountRead_TeamPATForbiddenPassthrough validates the APIError-code
+// TestAccountRead_TroopPATForbiddenPassthrough validates the APIError-code
 // passthrough contract. The specific error code is forward-compat with
-// ADR-0027 (team-PAT rejection on me/* routes is not yet enforced by the
+// ADR-0027 (troop-PAT rejection on me/* routes is not yet enforced by the
 // platform — see me/account/route.ts:7-15).
-func TestAccountRead_TeamPATForbiddenPassthrough(t *testing.T) {
+func TestAccountRead_TroopPATForbiddenPassthrough(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]any{"error": "team-pat-cannot-access-account"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": "troop-pat-cannot-access-account"})
 	}))
 	t.Cleanup(srv.Close)
 
@@ -62,7 +62,7 @@ func TestAccountRead_TeamPATForbiddenPassthrough(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.Code != "team-pat-cannot-access-account" {
+	if apiErr.Code != "troop-pat-cannot-access-account" {
 		t.Errorf("expected code passthrough, got %q", apiErr.Code)
 	}
 }

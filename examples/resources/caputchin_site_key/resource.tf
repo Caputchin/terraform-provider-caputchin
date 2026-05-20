@@ -1,10 +1,10 @@
-resource "caputchin_team" "marketing" {
+resource "caputchin_troop" "marketing" {
   name = "marketing"
 }
 
 resource "caputchin_site_key" "blog" {
-  name    = "blog-prod"
-  team_id = caputchin_team.marketing.id
+  name     = "blog-prod"
+  troop_id = caputchin_troop.marketing.id
 }
 
 # Hand the secret to your backend's secrets manager (Vault / Doppler /

@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-// Package teams implements the caputchin_troop resource and data source.
-package teams
+// Package troops implements the caputchin_troop resource and data source.
+package troops
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -21,8 +21,8 @@ type troopModel struct {
 	CreatedAt types.Int64  `tfsdk:"created_at"`
 }
 
-// teamEnvelope is the {team: {...}} envelope every team route returns.
-type teamEnvelope struct {
+// troopEnvelope is the {troop: {...}} envelope every troop route returns.
+type troopEnvelope struct {
 	Troop apiTroop `json:"troop"`
 }
 

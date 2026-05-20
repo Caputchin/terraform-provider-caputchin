@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-package teams
+package troops
 
 import (
 	"context"
@@ -18,30 +18,30 @@ import (
 
 // NewResource is the factory consumed by the provider's Resources() list.
 func NewResource() resource.Resource {
-	return &teamResource{}
+	return &troopResource{}
 }
 
-type teamResource struct {
+type troopResource struct {
 	client *client.Client
 }
 
-func (r *teamResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *troopResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_troop"
 }
 
-func (r *teamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *troopResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin team — the tenant boundary that owns site keys. Only shared teams are creatable; personal teams are auto-created per account and cannot be managed by this resource.",
+		Description: "A Caputchin troop — the tenant boundary that owns site keys. Only shared troops are creatable; personal troops are auto-created per account and cannot be managed by this resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Server-issued team identifier.",
+				Description: "Server-issued troop identifier.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Human-readable team name. Modifiable in place.",
+				Description: "Human-readable troop name. Modifiable in place.",
 				Required:    true,
 			},
 			"account_id": schema.StringAttribute{
@@ -73,7 +73,7 @@ func (r *teamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	}
 }
 
-func (r *teamResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *troopResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -88,7 +88,7 @@ func (r *teamResource) Configure(_ context.Context, req resource.ConfigureReques
 	r.client = c
 }
 
-func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *troopResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan troopModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -96,19 +96,19 @@ func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	body := map[string]any{"name": plan.Name.ValueString()}
-	var env teamEnvelope
+	var env troopEnvelope
 	if err := r.client.Post(ctx, "/v1/management/troops", body, &env); err != nil {
 		resp.Diagnostics.AddError("troop-create-failed", err.Error())
 		return
 	}
 
 	if env.Troop.Kind == "personal" {
-		// Defensive — the route only creates shared teams, but if a future
-		// API change ever returns a personal team here we want the surprise
+		// Defensive — the route only creates shared troops, but if a future
+		// API change ever returns a personal troop here we want the surprise
 		// surfaced loudly rather than silently stored in state.
 		resp.Diagnostics.AddError(
-			"unexpected-personal-team",
-			"The management API returned a personal team for a create call. Personal teams cannot be managed by this provider.",
+			"unexpected-personal-troop",
+			"The management API returned a personal troop for a create call. Personal troops cannot be managed by this provider.",
 		)
 		return
 	}
@@ -116,14 +116,14 @@ func (r *teamResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
-func (r *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *troopResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state troopModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var env teamEnvelope
+	var env troopEnvelope
 	err := r.client.Get(ctx, "/v1/management/troops/"+state.ID.ValueString(), &env)
 	if err != nil {
 		if client.IsNotFound(err) {
@@ -137,7 +137,7 @@ func (r *teamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
-func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *troopResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan troopModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -145,7 +145,7 @@ func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	body := map[string]any{"name": plan.Name.ValueString()}
-	var env teamEnvelope
+	var env troopEnvelope
 	if err := r.client.Patch(ctx, "/v1/management/troops/"+plan.ID.ValueString(), body, &env); err != nil {
 		resp.Diagnostics.AddError("troop-update-failed", err.Error())
 		return
@@ -154,7 +154,7 @@ func (r *teamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, env.Troop.toModel())...)
 }
 
-func (r *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *troopResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state troopModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -169,6 +169,6 @@ func (r *teamResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-func (r *teamResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *troopResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }

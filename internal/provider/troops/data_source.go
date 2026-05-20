@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-package teams
+package troops
 
 import (
 	"context"
@@ -15,20 +15,20 @@ import (
 
 // NewDataSource is the factory consumed by the provider's DataSources() list.
 func NewDataSource() datasource.DataSource {
-	return &teamDataSource{}
+	return &troopDataSource{}
 }
 
-type teamDataSource struct {
+type troopDataSource struct {
 	client *client.Client
 }
 
-func (d *teamDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *troopDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_troop"
 }
 
-func (d *teamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *troopDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Look up an existing Caputchin team by id.",
+		Description: "Look up an existing Caputchin troop by id.",
 		Attributes: map[string]schema.Attribute{
 			"id":         schema.StringAttribute{Required: true, Description: "Troop identifier."},
 			"name":       schema.StringAttribute{Computed: true, Description: "Troop name."},
@@ -40,7 +40,7 @@ func (d *teamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	}
 }
 
-func (d *teamDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *troopDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -55,14 +55,14 @@ func (d *teamDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 	d.client = c
 }
 
-func (d *teamDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *troopDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var cfg troopModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var env teamEnvelope
+	var env troopEnvelope
 	if err := d.client.Get(ctx, "/v1/management/troops/"+cfg.ID.ValueString(), &env); err != nil {
 		resp.Diagnostics.AddError("troop-read-failed", err.Error())
 		return

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-package teams
+package troops
 
 import (
 	"context"
