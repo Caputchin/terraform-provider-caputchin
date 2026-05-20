@@ -4,7 +4,7 @@ Before tagging the first release of `terraform-provider-caputchin`, generate a r
 
 ## Generate a release-signing GPG key
 
-Run locally — the private key never leaves your machine except to land in Infisical and the GitHub Actions secret store.
+Run locally; the private key never leaves your machine except to land in Infisical and the GitHub Actions secret store.
 
 ```sh
 gpg --full-generate-key
@@ -54,7 +54,7 @@ Paste the output into the Terraform Registry publisher page (Account → Signing
 
 ## Register with the OpenTofu Registry
 
-The OpenTofu Registry follows the same flow — submit the public key in the metadata PR alongside the provider registration. See [ADR-0042](../../docs/adr/0042-publish-terraform-provider-to-both-registries-and-rename-repo.md).
+The OpenTofu Registry follows the same flow: submit the public key in the metadata PR alongside the provider registration. See [ADR-0042](../../docs/adr/0042-publish-terraform-provider-to-both-registries-and-rename-repo.md).
 
 ## Rotate the key
 
@@ -64,7 +64,7 @@ Generate a new key, publish the new public key to both registries BEFORE retirin
 
 Once `v0.1.0` is signed and the Registry pages render with the green "signed" badge, scrub `gpg-private-key.asc` from your local disk. The Infisical copy is the only persistent storage.
 
-Use `shred` rather than plain `rm` — modern SSDs (wear leveling) and journaled filesystems mean `rm` alone does not guarantee unrecoverability:
+Use `shred` rather than plain `rm`; modern SSDs (wear leveling) and journaled filesystems mean `rm` alone does not guarantee unrecoverability:
 
 ```sh
 shred -u gpg-private-key.asc

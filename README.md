@@ -17,7 +17,7 @@ Both consume the **same binary release**. The provider implements the standard T
 |---|---|
 | Terraform | 1.5+ |
 | OpenTofu | 1.6+ |
-| Caputchin management token | account-PAT or troop-PAT — see [management API docs](https://caputchin.com/docs/management-api) |
+| Caputchin management token | account-PAT or troop-PAT (see [management API docs](https://caputchin.com/docs/management-api)) |
 
 ## Quick start
 
@@ -85,7 +85,7 @@ See [`docs/`](docs/) for the full schema reference (also rendered on the Terrafo
 | Argument | Type | Default | Notes |
 |---|---|---|---|
 | `endpoint` | string | `https://api.caputchin.com` | Override for staging or local development |
-| `management_token` | string (sensitive) | reads `CAPUTCHIN_MANAGEMENT_TOKEN` env if unset | Management API PAT — see [management API docs](https://caputchin.com/docs/management-api) |
+| `management_token` | string (sensitive) | reads `CAPUTCHIN_MANAGEMENT_TOKEN` env if unset | Management API PAT (see [management API docs](https://caputchin.com/docs/management-api)) |
 
 ## OpenTofu lock file
 
@@ -102,4 +102,4 @@ See [CLAUDE.md](CLAUDE.md) for the workspace conventions. Issues and pull reques
 
 ## License
 
-[MPL-2.0](LICENSE). Copyright (c) 2026 Caputchin. See [TRADEMARK.md](TRADEMARK.md) for brand-usage policy — the license does not grant trademark rights.
+[MPL-2.0](LICENSE). Copyright (c) 2026 Caputchin. See [TRADEMARK.md](TRADEMARK.md) for brand-usage policy; the license does not grant trademark rights.
