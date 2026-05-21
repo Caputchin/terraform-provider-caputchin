@@ -199,9 +199,10 @@ func (r *tokenResource) Read(ctx context.Context, req resource.ReadRequest, resp
 // framework routes name / type changes through Create + Delete; Update
 // fires only when `secret_version` differs from state. In that case the
 // provider POSTs to /v1/management/tokens/{id}/rotate, replaces the
-// `secret` in state with the rotated value, and carries every other
-// attribute forward from state (the API does not echo them on the rotate
-// response). The token row's id and prefix are unchanged.
+// `secret` AND `prefix` in state with the rotated values from the
+// response, and carries every other attribute forward from state. The
+// token row's id and name are unchanged across rotation; the prefix
+// rotates together with the secret half.
 func (r *tokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state tokenModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -235,17 +236,14 @@ func (r *tokenResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	// API roll prior to ADR-0056-update may not include `prefix` in the
+	// rotate response; slice the bearer string locally as a fallback.
+	// The token format is always `cpt_pat_<32 base64url>` = 40 chars and
+	// `env.Token == ""` is rejected above, so len(env.Token) >= 16 holds
+	// unconditionally and no stale-state-carry path is needed.
 	rotatedPrefix := types.StringValue(env.Prefix)
 	if env.Prefix == "" {
-		// Defensive: pre-ADR-0056-update API rolls without prefix in the
-		// response can still be handled by slicing the bearer string
-		// locally. token format is always `cpt_pat_<32 base64url>` = 40
-		// chars; first 16 are the prefix.
-		if len(env.Token) >= 16 {
-			rotatedPrefix = types.StringValue(env.Token[:16])
-		} else {
-			rotatedPrefix = state.Prefix
-		}
+		rotatedPrefix = types.StringValue(env.Token[:16])
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
 		ID:            state.ID,

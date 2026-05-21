@@ -13,10 +13,11 @@ import (
 
 // tokenModel is the Terraform state shape for caputchin_account_token.
 // SecretVersion is a provider-tracked rotation counter (not echoed by the
-// API) that drives in-place secret rotation per ADR-0056. Bumping the
-// value in a plan fires POST /v1/management/tokens/{id}/rotate on the
-// next apply; the token row's id and prefix stay stable and the rotated
-// secret lands in the existing Secret attribute.
+// API) that drives in-place credential rotation per ADR-0056. Bumping
+// the value in a plan fires POST /v1/management/tokens/{id}/rotate on
+// the next apply; the token row's id and name stay stable, the prefix
+// rotates together with the secret half, and the rotated values land in
+// the existing Secret and Prefix attributes.
 type tokenModel struct {
 	ID            types.String `tfsdk:"id"`
 	Name          types.String `tfsdk:"name"`
