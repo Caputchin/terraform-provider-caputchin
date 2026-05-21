@@ -119,7 +119,7 @@ func TestTokenDelete_Succeeds(t *testing.T) {
 // sibling TestRotateSecret_HappyPath shape from sites/resource_test.go.
 //
 // The response carries both the new bearer (token) and the new prefix
-// because rotation generates a fresh credential — prefix rotates
+// because rotation generates a fresh credential. prefix rotates
 // together with the secret half. Cross-rotation correlation lives on
 // the token's id + name, not the prefix.
 func TestTokenRotate_HappyPath(t *testing.T) {

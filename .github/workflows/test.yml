@@ -41,7 +41,7 @@ jobs:
         run: |
           tfplugindocs generate --provider-name caputchin
           if ! git diff --quiet -- docs/; then
-            echo "::error::generated docs are out of sync — run 'make docs' and commit the result"
+            echo "::error::generated docs are out of sync; run 'make docs' and commit the result"
             git --no-pager diff -- docs/
             exit 1
           fi

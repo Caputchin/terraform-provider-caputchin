@@ -34,7 +34,7 @@ func (r *tokenResource) Metadata(_ context.Context, req resource.MetadataRequest
 
 func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate; the row's `id` and `name` stay stable, the `prefix` rotates together with the secret half, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
+		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model (token rows do not consume a seat). The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate; the row's `id` and `name` stay stable, the `prefix` rotates together with the secret half, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued token identifier.",
@@ -60,7 +60,7 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"prefix": schema.StringAttribute{
-				Description: "Display-friendly prefix of the token value (first 16 chars). Rotates together with the secret half on every in-place rotation (ADR-0056) — refer to tokens across rotation by `id` or `name`, not `prefix`.",
+				Description: "Display-friendly prefix of the token value (first 16 chars). Rotates together with the secret half on every in-place rotation (ADR-0056); refer to tokens across rotation by `id` or `name`, not `prefix`.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -138,7 +138,7 @@ func (r *tokenResource) Create(ctx context.Context, req resource.CreateRequest, 
 	// Persist the planned secret_version (or its default 0). Initial
 	// Create does NOT call rotate regardless of the planned version (the
 	// mint already returns a fresh secret); the provider just records
-	// the version so future bumps fire the rotation branch in Update —
+	// the version so future bumps fire the rotation branch in Update;
 	// same shape as caputchin_site_key per ADR-0051 / ADR-0056.
 	secretVersion := plan.SecretVersion
 	if secretVersion.IsNull() || secretVersion.IsUnknown() {
@@ -217,7 +217,7 @@ func (r *tokenResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	if plannedVersion.ValueInt64() == state.SecretVersion.ValueInt64() {
-		// No-op Update — surfaces drift on a Computed field nothing
+		// No-op Update: surfaces drift on a Computed field nothing
 		// actually changed. Carry state forward unchanged.
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		return
@@ -277,7 +277,7 @@ func (r *tokenResource) ImportState(ctx context.Context, req resource.ImportStat
 	// prefix, created_at). Customers recover by bumping `secret_version`
 	// from `0` (null state) to `1` on the next plan; Update fires the
 	// rotation branch and writes a fresh value into state without
-	// destroying the resource — same shape as caputchin_site_key.
+	// destroying the resource; same shape as caputchin_site_key.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret"), types.StringNull())...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret_version"), types.Int64Value(0))...)
 }
