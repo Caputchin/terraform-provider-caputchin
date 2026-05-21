@@ -3,12 +3,12 @@
 page_title: "caputchin_troop_pat Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  Attaches an existing troop-PAT (minted via caputchin_account_token with type="troop") to a specific troop with a permission set and scope. No seat is consumed here (the PAT seat was claimed at mint time), and the same PAT may be attached to multiple troops with different permissions. troop_id and pat_id are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). perms and scope are mutable in place.
+  Attaches an existing troop-PAT (minted via caputchin_account_token with type="troop") to a specific troop with a permission set and scope. Each attachment occupies one of the target troop's token slots; capacity per troop is `accounts.seats_total - user_used` and the management API refuses with `no-troop-slot-available` (HTTP 409) when the troop is at capacity. The same PAT may be attached to multiple troops with different permissions (each attachment counts against THAT troop's slot count independently). troop_id and pat_id are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). perms and scope are mutable in place.
 ---
 
 # caputchin_troop_pat (Resource)
 
-Attaches an existing troop-PAT (minted via `caputchin_account_token` with `type="troop"`) to a specific troop with a permission set and scope. No seat is consumed here (the PAT seat was claimed at mint time), and the same PAT may be attached to multiple troops with different permissions. `troop_id` and `pat_id` are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). `perms` and `scope` are mutable in place.
+Attaches an existing troop-PAT (minted via `caputchin_account_token` with `type="troop"`) to a specific troop with a permission set and scope. Each attachment occupies one of the target troop's token slots; capacity per troop is `accounts.seats_total - user_used` and the management API refuses with `no-troop-slot-available` (HTTP 409) when the troop is at capacity. The same PAT may be attached to multiple troops with different permissions (each attachment counts against THAT troop's slot count independently). `troop_id` and `pat_id` are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). `perms` and `scope` are mutable in place.
 
 ## Example Usage
 

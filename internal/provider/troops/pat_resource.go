@@ -98,7 +98,7 @@ func (r *patResource) Metadata(_ context.Context, req resource.MetadataRequest, 
 
 func (r *patResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Attaches an existing troop-PAT (minted via `caputchin_account_token` with `type=\"troop\"`) to a specific troop with a permission set and scope. No seat is consumed here (the PAT seat was claimed at mint time), and the same PAT may be attached to multiple troops with different permissions. `troop_id` and `pat_id` are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). `perms` and `scope` are mutable in place.",
+		Description: "Attaches an existing troop-PAT (minted via `caputchin_account_token` with `type=\"troop\"`) to a specific troop with a permission set and scope. Each attachment occupies one of the target troop's token slots; capacity per troop is `accounts.seats_total - user_used` and the management API refuses with `no-troop-slot-available` (HTTP 409) when the troop is at capacity. The same PAT may be attached to multiple troops with different permissions (each attachment counts against THAT troop's slot count independently). `troop_id` and `pat_id` are immutable; changing either forces replacement (the underlying membership row is per-(troop, pat) pair). `perms` and `scope` are mutable in place.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued membership identifier.",

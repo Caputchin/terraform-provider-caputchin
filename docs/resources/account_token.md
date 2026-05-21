@@ -3,12 +3,12 @@
 page_title: "caputchin_account_token Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
+  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
 ---
 
 # caputchin_account_token (Resource)
 
-A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT consuming one PAT seat. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
+A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
 
 ## Example Usage
 
@@ -42,7 +42,7 @@ output "ci_prod_token" {
 
 ### Optional
 
-- `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope, takes one PAT seat). Defaults to `troop`. Immutable; changing forces replacement.
+- `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope; mint is free, seat is claimed at attach time). Defaults to `troop`. Immutable; changing forces replacement.
 
 ### Read-Only
 
