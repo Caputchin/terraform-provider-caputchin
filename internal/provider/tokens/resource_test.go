@@ -110,3 +110,50 @@ func TestTokenDelete_Succeeds(t *testing.T) {
 		t.Fatalf("delete failed: %v", err)
 	}
 }
+
+// TestTokenRotate_HappyPath exercises the POST /tokens/{id}/rotate wire
+// contract via the client directly (ADR-0056). The provider's Update
+// branch for secret_version bumps is exercised end-to-end at the
+// acceptance layer; this test pins the wire shape so a route-side
+// rename of `token` would surface here. Mirrors the sibling
+// TestRotateSecret_HappyPath shape from sites/resource_test.go.
+func TestTokenRotate_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/management/tokens/tok_abc/rotate" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"token": "cpt_pat_abc12345_rotated_secret_tail"})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env rotateEnvelope
+	if err := c.Post(context.Background(), "/v1/management/tokens/tok_abc/rotate", map[string]any{}, &env); err != nil {
+		t.Fatalf("rotate post failed: %v", err)
+	}
+	if env.Token != "cpt_pat_abc12345_rotated_secret_tail" {
+		t.Errorf("expected token=cpt_pat_abc12345_rotated_secret_tail, got %q", env.Token)
+	}
+}
+
+// TestTokenRotate_EmptyToken pins the contract-violation guard for the
+// case where the management API returns a 200 with an absent / empty
+// `token` field. The provider's Update branch refuses to write an empty
+// string into state and surfaces a `missing-secret-on-rotate`
+// diagnostic; this test fixes the wire shape that would trip that
+// guard.
+func TestTokenRotate_EmptyToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env rotateEnvelope
+	if err := c.Post(context.Background(), "/v1/management/tokens/tok_abc/rotate", map[string]any{}, &env); err != nil {
+		t.Fatalf("rotate post should succeed at the transport layer: %v", err)
+	}
+	if env.Token != "" {
+		t.Errorf("expected empty token to round-trip, got %q", env.Token)
+	}
+}
