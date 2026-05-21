@@ -3,18 +3,18 @@
 page_title: "caputchin_account_token Resource - terraform-provider-caputchin"
 subcategory: ""
 description: |-
-  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
+  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the secret in place without losing troop attachments, bump secret_version — the provider issues POST /tokens/{id}/rotate, the row's id and prefix stay stable, and the rotated value lands in secret per ADR-0056. Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
 ---
 
 # caputchin_account_token (Resource)
 
-A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
+A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the secret in place without losing troop attachments, bump `secret_version` — the provider issues POST /tokens/{id}/rotate, the row's id and prefix stay stable, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
 
 ## Example Usage
 
 ```terraform
-# Mint a troop-scoped PAT (default type). Consumes one PAT seat per
-# ADR-0028. Attach to a specific troop with caputchin_troop_pat.
+# Mint a troop-scoped PAT (default type). Mint is free under the per-troop-axis
+# seat model; the seat is claimed at attach time via caputchin_troop_pat.
 resource "caputchin_account_token" "ci_prod" {
   name = "ci-prod"
 }
@@ -25,8 +25,17 @@ resource "caputchin_account_token" "automation" {
   type = "account"
 }
 
-# Hand the secret to your secrets manager. Returned ONCE at create time;
-# rotate (destroy + recreate) the resource to issue a new value.
+# In-place rotation (ADR-0056). Bump secret_version to issue a fresh secret
+# without destroying the resource. The token id and prefix stay stable; any
+# troop attachments survive untouched. The replacement value lands in
+# `secret` and is shown ONCE in the apply output (sensitive).
+resource "caputchin_account_token" "ci_prod_rotating" {
+  name           = "ci-prod"
+  secret_version = 1 # increment to rotate
+}
+
+# Hand the secret to your secrets manager. Returned ONCE at create time and
+# on every rotation; pipe straight to a secret store.
 output "ci_prod_token" {
   value     = caputchin_account_token.ci_prod.secret
   sensitive = true
@@ -42,6 +51,7 @@ output "ci_prod_token" {
 
 ### Optional
 
+- `secret_version` (Number) Provider-tracked rotation counter (ADR-0056). Bump the value to trigger an in-place secret rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. Token `id`, `prefix`, `name`, and `type` are unchanged; any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh secret). Refused by the API if the calling token is the rotation target.
 - `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope; mint is free, seat is claimed at attach time). Defaults to `troop`. Immutable; changing forces replacement.
 
 ### Read-Only
@@ -49,4 +59,4 @@ output "ci_prod_token" {
 - `created_at` (Number) Creation timestamp in milliseconds since the Unix epoch.
 - `id` (String) Server-issued token identifier.
 - `prefix` (String) Display-friendly prefix of the token value (first 16 chars).
-- `secret` (String, Sensitive) Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered; destroy and recreate the resource to mint a new token.
+- `secret` (String, Sensitive) Full bearer-token value. Returned ONCE at creation and on every in-place rotation (`secret_version` bump). Pipe to a secrets store immediately. The value is stored sensitively in state; treat the state file as secret-bearing. Lost values cannot be recovered; rotate via `secret_version` to mint a fresh value into state without destroying the resource.

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -33,7 +34,7 @@ func (r *tokenResource) Metadata(_ context.Context, req resource.MetadataRequest
 
 func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
+		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the secret in place without losing troop attachments, bump `secret_version` — the provider issues POST /tokens/{id}/rotate, the row's id and prefix stay stable, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued token identifier.",
@@ -66,7 +67,7 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"secret": schema.StringAttribute{
-				Description: "Full bearer-token value. Returned ONCE at creation; never re-readable. Pipe to a secrets store immediately. Lost values cannot be recovered; destroy and recreate the resource to mint a new token.",
+				Description: "Full bearer-token value. Returned ONCE at creation and on every in-place rotation (`secret_version` bump). Pipe to a secrets store immediately. The value is stored sensitively in state; treat the state file as secret-bearing. Lost values cannot be recovered; rotate via `secret_version` to mint a fresh value into state without destroying the resource.",
 				Computed:    true,
 				Sensitive:   true,
 				PlanModifiers: []planmodifier.String{
@@ -79,6 +80,12 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				PlanModifiers: []planmodifier.Int64{
 					int64UseStateForUnknown{},
 				},
+			},
+			"secret_version": schema.Int64Attribute{
+				Description: "Provider-tracked rotation counter (ADR-0056). Bump the value to trigger an in-place secret rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. Token `id`, `prefix`, `name`, and `type` are unchanged; any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh secret). Refused by the API if the calling token is the rotation target.",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(0),
 			},
 		},
 	}
@@ -128,13 +135,23 @@ func (r *tokenResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// Persist the planned secret_version (or its default 0). Initial
+	// Create does NOT call rotate regardless of the planned version (the
+	// mint already returns a fresh secret); the provider just records
+	// the version so future bumps fire the rotation branch in Update —
+	// same shape as caputchin_site_key per ADR-0051 / ADR-0056.
+	secretVersion := plan.SecretVersion
+	if secretVersion.IsNull() || secretVersion.IsUnknown() {
+		secretVersion = types.Int64Value(0)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
-		ID:        types.StringValue(env.Token.ID),
-		Name:      types.StringValue(env.Token.Name),
-		Type:      types.StringValue(env.Token.Type),
-		Prefix:    types.StringValue(env.Token.Prefix),
-		Secret:    types.StringValue(env.Token.Value),
-		CreatedAt: types.Int64Value(env.Token.CreatedAt),
+		ID:            types.StringValue(env.Token.ID),
+		Name:          types.StringValue(env.Token.Name),
+		Type:          types.StringValue(env.Token.Type),
+		Prefix:        types.StringValue(env.Token.Prefix),
+		Secret:        types.StringValue(env.Token.Value),
+		CreatedAt:     types.Int64Value(env.Token.CreatedAt),
+		SecretVersion: secretVersion,
 	})...)
 }
 
@@ -160,25 +177,73 @@ func (r *tokenResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		if row.ID != id {
 			continue
 		}
-		// Preserve the secret; Read never returns it.
+		// Preserve the secret AND the provider-tracked secret_version;
+		// the API has no notion of secret_version (lives entirely in
+		// state), and Read never returns the secret value.
 		resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
-			ID:        types.StringValue(row.ID),
-			Name:      types.StringValue(row.Name),
-			Type:      types.StringValue(row.Type),
-			Prefix:    types.StringValue(row.Prefix),
-			Secret:    state.Secret,
-			CreatedAt: types.Int64Value(row.CreatedAt),
+			ID:            types.StringValue(row.ID),
+			Name:          types.StringValue(row.Name),
+			Type:          types.StringValue(row.Type),
+			Prefix:        types.StringValue(row.Prefix),
+			Secret:        state.Secret,
+			CreatedAt:     types.Int64Value(row.CreatedAt),
+			SecretVersion: state.SecretVersion,
 		})...)
 		return
 	}
 	resp.State.RemoveResource(ctx)
 }
 
-// Update is intentionally a no-op surface: every mutable attribute on the
-// schema is marked RequiresReplace, so the framework routes any change
-// through Create/Delete rather than Update. The method exists because the
-// resource.Resource interface requires it.
-func (r *tokenResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
+// Update branches on the provider-tracked `secret_version` (ADR-0056).
+// Every other mutable attribute on the schema is RequiresReplace, so the
+// framework routes name / type changes through Create + Delete; Update
+// fires only when `secret_version` differs from state. In that case the
+// provider POSTs to /v1/management/tokens/{id}/rotate, replaces the
+// `secret` in state with the rotated value, and carries every other
+// attribute forward from state (the API does not echo them on the rotate
+// response). The token row's id and prefix are unchanged.
+func (r *tokenResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state tokenModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plannedVersion := plan.SecretVersion
+	if plannedVersion.IsNull() || plannedVersion.IsUnknown() {
+		plannedVersion = state.SecretVersion
+	}
+
+	if plannedVersion.ValueInt64() == state.SecretVersion.ValueInt64() {
+		// No-op Update — surfaces drift on a Computed field nothing
+		// actually changed. Carry state forward unchanged.
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+		return
+	}
+
+	var env rotateEnvelope
+	if err := r.client.Post(ctx, "/v1/management/tokens/"+state.ID.ValueString()+"/rotate", map[string]any{}, &env); err != nil {
+		resp.Diagnostics.AddError("token-rotate-failed", err.Error())
+		return
+	}
+	if env.Token == "" {
+		resp.Diagnostics.AddError(
+			"missing-secret-on-rotate",
+			"The management API did not return a token value from /tokens/{id}/rotate. This is a provider/API contract violation.",
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
+		ID:            state.ID,
+		Name:          state.Name,
+		Type:          state.Type,
+		Prefix:        state.Prefix,
+		Secret:        types.StringValue(env.Token),
+		CreatedAt:     state.CreatedAt,
+		SecretVersion: plannedVersion,
+	})...)
 }
 
 func (r *tokenResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -199,7 +264,10 @@ func (r *tokenResource) ImportState(ctx context.Context, req resource.ImportStat
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	// The imported row has no secret in state; the API never returns it
 	// after the initial mint. Importing recovers metadata (name, type,
-	// prefix, created_at) but the secret is unrecoverable; destroy and
-	// recreate the resource to mint a usable token.
+	// prefix, created_at). Customers recover by bumping `secret_version`
+	// from `0` (null state) to `1` on the next plan; Update fires the
+	// rotation branch and writes a fresh value into state without
+	// destroying the resource — same shape as caputchin_site_key.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret"), types.StringNull())...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret_version"), types.Int64Value(0))...)
 }
