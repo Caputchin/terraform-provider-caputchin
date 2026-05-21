@@ -60,8 +60,12 @@ type apiToken struct {
 	CreatedAt  int64  `json:"created_at"`
 }
 
-// rotateEnvelope matches the POST /tokens/{id}/rotate response: { token }
-// where token is the replacement bearer-token string returned ONCE.
+// rotateEnvelope matches the POST /tokens/{id}/rotate response: { token,
+// prefix } where token is the replacement bearer-token string returned
+// ONCE and prefix is the rotated 16-char leading prefix (same as
+// token.slice(0, 16)). Both rotate together per ADR-0056; the token row's
+// id and name are unchanged across rotation.
 type rotateEnvelope struct {
-	Token string `json:"token"`
+	Token  string `json:"token"`
+	Prefix string `json:"prefix"`
 }

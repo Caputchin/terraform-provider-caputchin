@@ -10,10 +10,11 @@ resource "caputchin_account_token" "automation" {
   type = "account"
 }
 
-# In-place rotation (ADR-0056). Bump secret_version to issue a fresh secret
-# without destroying the resource. The token id and prefix stay stable; any
-# troop attachments survive untouched. The replacement value lands in
-# `secret` and is shown ONCE in the apply output (sensitive).
+# In-place rotation (ADR-0056). Bump secret_version to issue a fresh credential
+# without destroying the resource. The token id and name stay stable; the
+# prefix rotates together with the secret half (refer to tokens across rotation
+# by id or name, not prefix). Any troop attachments survive untouched. The
+# replacement value lands in `secret` and is shown ONCE in the apply output.
 resource "caputchin_account_token" "ci_prod_rotating" {
   name           = "ci-prod"
   secret_version = 1 # increment to rotate

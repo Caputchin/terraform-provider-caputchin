@@ -115,14 +115,22 @@ func TestTokenDelete_Succeeds(t *testing.T) {
 // contract via the client directly (ADR-0056). The provider's Update
 // branch for secret_version bumps is exercised end-to-end at the
 // acceptance layer; this test pins the wire shape so a route-side
-// rename of `token` would surface here. Mirrors the sibling
-// TestRotateSecret_HappyPath shape from sites/resource_test.go.
+// rename of `token` or `prefix` would surface here. Mirrors the
+// sibling TestRotateSecret_HappyPath shape from sites/resource_test.go.
+//
+// The response carries both the new bearer (token) and the new prefix
+// because rotation generates a fresh credential — prefix rotates
+// together with the secret half. Cross-rotation correlation lives on
+// the token's id + name, not the prefix.
 func TestTokenRotate_HappyPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != "/v1/management/tokens/tok_abc/rotate" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"token": "cpt_pat_abc12345_rotated_secret_tail"})
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"token":  "cpt_pat_rotated001_rotated_secret_tailpad",
+			"prefix": "cpt_pat_rotated0",
+		})
 	}))
 	t.Cleanup(srv.Close)
 
@@ -131,8 +139,11 @@ func TestTokenRotate_HappyPath(t *testing.T) {
 	if err := c.Post(context.Background(), "/v1/management/tokens/tok_abc/rotate", map[string]any{}, &env); err != nil {
 		t.Fatalf("rotate post failed: %v", err)
 	}
-	if env.Token != "cpt_pat_abc12345_rotated_secret_tail" {
-		t.Errorf("expected token=cpt_pat_abc12345_rotated_secret_tail, got %q", env.Token)
+	if env.Token != "cpt_pat_rotated001_rotated_secret_tailpad" {
+		t.Errorf("expected token=cpt_pat_rotated001_rotated_secret_tailpad, got %q", env.Token)
+	}
+	if env.Prefix != "cpt_pat_rotated0" {
+		t.Errorf("expected prefix=cpt_pat_rotated0, got %q", env.Prefix)
 	}
 }
 
@@ -155,5 +166,8 @@ func TestTokenRotate_EmptyToken(t *testing.T) {
 	}
 	if env.Token != "" {
 		t.Errorf("expected empty token to round-trip, got %q", env.Token)
+	}
+	if env.Prefix != "" {
+		t.Errorf("expected empty prefix to round-trip, got %q", env.Prefix)
 	}
 }

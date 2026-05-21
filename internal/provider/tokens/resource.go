@@ -34,7 +34,7 @@ func (r *tokenResource) Metadata(_ context.Context, req resource.MetadataRequest
 
 func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the secret in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate, the row's id and prefix stay stable, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
+		Description: "A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model — token rows do not consume a seat. The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate; the row's `id` and `name` stay stable, the `prefix` rotates together with the secret half, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Server-issued token identifier.",
@@ -60,7 +60,7 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"prefix": schema.StringAttribute{
-				Description: "Display-friendly prefix of the token value (first 16 chars).",
+				Description: "Display-friendly prefix of the token value (first 16 chars). Rotates together with the secret half on every in-place rotation (ADR-0056) — refer to tokens across rotation by `id` or `name`, not `prefix`.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -82,7 +82,7 @@ func (r *tokenResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"secret_version": schema.Int64Attribute{
-				Description: "Provider-tracked rotation counter (ADR-0056). Bump the value to trigger an in-place secret rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. Token `id`, `prefix`, `name`, and `type` are unchanged; any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh secret). Refused by the API if the calling token is the rotation target.",
+				Description: "Provider-tracked rotation counter (ADR-0056). Bump the value to trigger an in-place credential rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. The token row's `id`, `name`, and `type` are unchanged; the `prefix` rotates together with the secret. Any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh credential). Refused by the API if the calling token is the rotation target.",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(0),
@@ -235,11 +235,23 @@ func (r *tokenResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	rotatedPrefix := types.StringValue(env.Prefix)
+	if env.Prefix == "" {
+		// Defensive: pre-ADR-0056-update API rolls without prefix in the
+		// response can still be handled by slicing the bearer string
+		// locally. token format is always `cpt_pat_<32 base64url>` = 40
+		// chars; first 16 are the prefix.
+		if len(env.Token) >= 16 {
+			rotatedPrefix = types.StringValue(env.Token[:16])
+		} else {
+			rotatedPrefix = state.Prefix
+		}
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, tokenModel{
 		ID:            state.ID,
 		Name:          state.Name,
 		Type:          state.Type,
-		Prefix:        state.Prefix,
+		Prefix:        rotatedPrefix,
 		Secret:        types.StringValue(env.Token),
 		CreatedAt:     state.CreatedAt,
 		SecretVersion: plannedVersion,
