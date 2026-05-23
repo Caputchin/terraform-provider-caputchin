@@ -13,8 +13,7 @@ variable "caputchin_management_token" {
 }
 
 provider "caputchin" {
-  # Endpoint defaults to https://api.caputchin.com.
-  # Override for local development against a wrangler-dev worker:
-  #   endpoint = "http://localhost:8787"
+  # Endpoint defaults to https://api.caputchin.com. Override with the
+  # `endpoint` attribute or the CAPUTCHIN_ENDPOINT environment variable.
   management_token = var.caputchin_management_token
 }

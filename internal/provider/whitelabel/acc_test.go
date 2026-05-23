@@ -4,8 +4,9 @@
 // Acceptance tests for the override-pipeline resources (ADR-0061). These
 // drive REAL Terraform (plan/apply/import/destroy) against a LIVE management
 // API, so they are gated behind TF_ACC=1 (resource.Test skips otherwise) and
-// require CAPUTCHIN_ENDPOINT + CAPUTCHIN_MANAGEMENT_TOKEN. Run locally against
-// `wrangler dev` with `make testacc`; they do NOT run in CI (TF_ACC unset).
+// require CAPUTCHIN_ENDPOINT + CAPUTCHIN_MANAGEMENT_TOKEN. Run them against a
+// non-production instance with `make testacc` (or scripts/testacc-bootstrap.sh);
+// they do NOT run in CI (TF_ACC unset).
 //
 // External test package (whitelabel_test): the suite imports the provider
 // package, which itself imports whitelabel, so an internal-package test would
@@ -47,7 +48,7 @@ func testAccPreCheck(t *testing.T) {
 		t.Fatal("CAPUTCHIN_MANAGEMENT_TOKEN must be set for acceptance tests (an account-PAT for the test account)")
 	}
 	if os.Getenv("CAPUTCHIN_ENDPOINT") == "" {
-		t.Fatal("CAPUTCHIN_ENDPOINT must be set (e.g. http://localhost:8787 for wrangler dev)")
+		t.Fatal("CAPUTCHIN_ENDPOINT must be set to the management API base URL")
 	}
 }
 
