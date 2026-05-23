@@ -45,6 +45,11 @@ func (r *schemaResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Description: "Per-axis editable-field schema for a custom (non-marketplace) game, declaring the keys customers may override (ADR-0061). Set exactly one of `troop_id` / `site_id`. Carries no plan-tier gate (it is metadata describing the shape of presets). Changing scope, game, or axis forces replacement.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description:   "Synthetic resource id encoding the composite key as `scope|id|game|axis` (scope is troop|site). Matches the import id.",
+				Computed:      true,
+				PlanModifiers: useStateForUnknown(),
+			},
 			"troop_id": schema.StringAttribute{
 				Description:   "Troop id for a troop-wide schema. Exactly one of troop_id / site_id is required. Forces replacement.",
 				Optional:      true,
@@ -177,6 +182,7 @@ func (r *schemaResource) ImportState(ctx context.Context, req resource.ImportSta
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("game_id"), game)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("axis"), axis)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 func (r *schemaResource) write(ctx context.Context, m *schemaModel, diags *diag.Diagnostics) {
@@ -203,5 +209,6 @@ func applySchemaWire(m *schemaModel, w schemaWire) error {
 	}
 	m.Schema = s
 	m.UpdatedAt = types.StringValue(w.UpdatedAt)
+	m.ID = types.StringValue(buildSchemaID(*m))
 	return nil
 }

@@ -75,6 +75,7 @@ resource "caputchin_white_label_preset" "blog_en" {
 
 ### Read-Only
 
+- `id` (String) Synthetic resource id encoding the composite key as `scope|id|game|axis|name` (scope is troop|site; game empty for a widget-shell preset). Matches the import id.
 - `updated_at` (String) Server timestamp (ISO 8601) of the last write.
 
 ## Import

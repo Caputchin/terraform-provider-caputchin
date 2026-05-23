@@ -44,6 +44,11 @@ func (r *gameResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: "Registers a game in a scope's customized-games list (ADR-0061), so it appears before any preset or schema is authored. Set exactly one of `troop_id` / `site_id`. Requires the configuration tier (Solo+).\n\nWARNING: destroying this resource cascade-deletes the ENTIRE game customization for the scope: every preset (all axes) and every custom schema for the game, not just the registry row. Do not manage a `caputchin_customized_game` alongside individual `caputchin_white_label_preset` / `caputchin_custom_game_schema` resources for the same game unless you intend the destroy to take them all with it.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description:   "Synthetic resource id encoding the composite key as `scope|id|game` (scope is troop|site). Matches the import id.",
+				Computed:      true,
+				PlanModifiers: useStateForUnknown(),
+			},
 			"troop_id": schema.StringAttribute{
 				Description:   "Troop id. Exactly one of troop_id / site_id is required. Forces replacement.",
 				Optional:      true,
@@ -119,6 +124,7 @@ func (r *gameResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 	state.Source = types.StringValue(env.Game.Source)
+	state.ID = types.StringValue(buildGameID(state))
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -166,6 +172,7 @@ func (r *gameResource) ImportState(ctx context.Context, req resource.ImportState
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("game_id"), game)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 func (r *gameResource) register(ctx context.Context, m *gameModel, diags *diag.Diagnostics) {
@@ -179,4 +186,5 @@ func (r *gameResource) register(ctx context.Context, m *gameModel, diags *diag.D
 		return
 	}
 	m.Source = types.StringValue(env.Game.Source)
+	m.ID = types.StringValue(buildGameID(*m))
 }

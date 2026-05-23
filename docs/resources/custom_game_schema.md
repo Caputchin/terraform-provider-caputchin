@@ -48,6 +48,7 @@ resource "caputchin_custom_game_schema" "space_shooter_skin" {
 
 ### Read-Only
 
+- `id` (String) Synthetic resource id encoding the composite key as `scope|id|game|axis` (scope is troop|site). Matches the import id.
 - `updated_at` (String) Server timestamp (ISO 8601) of the last write.
 
 ## Import

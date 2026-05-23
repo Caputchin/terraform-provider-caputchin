@@ -43,6 +43,13 @@ func requiresReplace() []planmodifier.String {
 	return []planmodifier.String{stringplanmodifier.RequiresReplace()}
 }
 
+// useStateForUnknown keeps the computed synthetic `id` stable across updates
+// (it only changes on replace, since every identity attr is RequiresReplace),
+// avoiding a spurious "known after apply" on the id during plain value updates.
+func useStateForUnknown() []planmodifier.String {
+	return []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
+}
+
 func (r *presetResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_white_label_preset"
 }
@@ -51,6 +58,11 @@ func (r *presetResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Description: "A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). Changing scope, game, axis, or name forces replacement.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description:   "Synthetic resource id encoding the composite key as `scope|id|game|axis|name` (scope is troop|site; game empty for a widget-shell preset). Matches the import id.",
+				Computed:      true,
+				PlanModifiers: useStateForUnknown(),
+			},
 			"troop_id": schema.StringAttribute{
 				Description:   "Troop id for a troop-wide preset. Exactly one of troop_id / site_id is required. Forces replacement.",
 				Optional:      true,
@@ -196,6 +208,7 @@ func (r *presetResource) ImportState(ctx context.Context, req resource.ImportSta
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("axis"), axis)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 // write PUTs the preset (idempotent upsert) and refreshes the computed +
@@ -227,5 +240,6 @@ func applyPresetWire(m *presetModel, w presetWire) error {
 	}
 	m.Values = vals
 	m.UpdatedAt = types.StringValue(w.UpdatedAt)
+	m.ID = types.StringValue(buildPresetID(*m))
 	return nil
 }

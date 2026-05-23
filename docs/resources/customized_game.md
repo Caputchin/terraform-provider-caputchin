@@ -48,6 +48,10 @@ resource "caputchin_customized_game" "leaf" {
 - `source` (String) `marketplace` or `custom`. Omit to auto-derive from the marketplace catalog (present ⇒ marketplace, else custom).
 - `troop_id` (String) Troop id. Exactly one of troop_id / site_id is required. Forces replacement.
 
+### Read-Only
+
+- `id` (String) Synthetic resource id encoding the composite key as `scope|id|game` (scope is troop|site). Matches the import id.
+
 ## Import
 
 Import is supported using the following syntax:

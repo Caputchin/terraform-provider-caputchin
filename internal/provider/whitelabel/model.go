@@ -4,18 +4,21 @@
 // Package whitelabel implements the override-pipeline resources
 // (caputchin_white_label_preset, caputchin_custom_game_schema,
 // caputchin_customized_game) per ADR-0061. Every resource targets exactly
-// one scope: a troop (troop-wide baseline) or a site (per-site override), and
-// and reaches the management API's per-axis endpoints. Game ids ride a query
+// one scope (a troop troop-wide baseline, or a site per-site override) and
+// reaches the management API's per-axis endpoints. Game ids ride a query
 // param, never the path, because they contain slashes.
 package whitelabel
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // presetModel is the Terraform state/plan shape for caputchin_white_label_preset.
 type presetModel struct {
+	ID        types.String         `tfsdk:"id"`
 	TroopID   types.String         `tfsdk:"troop_id"`
 	SiteID    types.String         `tfsdk:"site_id"`
 	GameID    types.String         `tfsdk:"game_id"`
@@ -40,6 +43,7 @@ type presetEnvelope struct {
 
 // schemaModel is the Terraform shape for caputchin_custom_game_schema.
 type schemaModel struct {
+	ID        types.String         `tfsdk:"id"`
 	TroopID   types.String         `tfsdk:"troop_id"`
 	SiteID    types.String         `tfsdk:"site_id"`
 	GameID    types.String         `tfsdk:"game_id"`
@@ -60,6 +64,7 @@ type schemaEnvelope struct {
 
 // gameModel is the Terraform shape for caputchin_customized_game (registry row).
 type gameModel struct {
+	ID      types.String `tfsdk:"id"`
 	TroopID types.String `tfsdk:"troop_id"`
 	SiteID  types.String `tfsdk:"site_id"`
 	GameID  types.String `tfsdk:"game_id"`
@@ -73,4 +78,38 @@ type gameWire struct {
 
 type gameEnvelope struct {
 	Game gameWire `json:"game"`
+}
+
+// ---------- synthetic resource ids ----------
+//
+// These resources have a composite natural key (scope + scope id + game +
+// axis + name), so they carry a computed `id` that encodes it in the same
+// pipe-delimited form ImportState parses. Terraform needs a single id for
+// import + state tracking, and it lets users reference `.id`.
+
+// idScope resolves the scope segment (kind + value) of a resource id from the
+// mutually-exclusive troop_id / site_id pair (one is always set; site wins).
+func idScope(troopID, siteID types.String) (kind, value string) {
+	if siteID.ValueString() != "" {
+		return "site", siteID.ValueString()
+	}
+	return "troop", troopID.ValueString()
+}
+
+// buildPresetID: scope|id|game|axis|name (game empty for widget-shell).
+func buildPresetID(m presetModel) string {
+	kind, value := idScope(m.TroopID, m.SiteID)
+	return fmt.Sprintf("%s|%s|%s|%s|%s", kind, value, m.GameID.ValueString(), m.Axis.ValueString(), m.Name.ValueString())
+}
+
+// buildSchemaID: scope|id|game|axis.
+func buildSchemaID(m schemaModel) string {
+	kind, value := idScope(m.TroopID, m.SiteID)
+	return fmt.Sprintf("%s|%s|%s|%s", kind, value, m.GameID.ValueString(), m.Axis.ValueString())
+}
+
+// buildGameID: scope|id|game.
+func buildGameID(m gameModel) string {
+	kind, value := idScope(m.TroopID, m.SiteID)
+	return fmt.Sprintf("%s|%s|%s", kind, value, m.GameID.ValueString())
 }

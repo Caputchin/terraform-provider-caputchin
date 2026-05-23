@@ -106,6 +106,10 @@ func TestAccWhiteLabelPreset_gameConfiguration(t *testing.T) {
 				ResourceName:      "caputchin_white_label_preset.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				// `values` round-trips in the server's canonical key order on
+				// import vs the config order kept on apply (semantically equal,
+				// different raw string). Verify identity, not the JSON bytes.
+				ImportStateVerifyIgnore: []string{"values"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					id, err := troopID(s)
 					if err != nil {
@@ -168,12 +172,21 @@ func TestAccCustomGameSchema(t *testing.T) {
 			},
 			{
 				Config: testAccSchemaConfig(`{"ship_color":"color","bg":"image"}`),
-				Check:  resource.TestCheckResourceAttr("caputchin_custom_game_schema.test", "schema", `{"bg":"image","ship_color":"color"}`),
+				// jsontypes.Normalized keeps the configured representation in
+				// state (semantically equal to the server's), so the stored
+				// string preserves the config's key order, not a re-sorted one.
+				Check: resource.TestCheckResourceAttr("caputchin_custom_game_schema.test", "schema", `{"ship_color":"color","bg":"image"}`),
 			},
 			{
 				ResourceName:      "caputchin_custom_game_schema.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				// On import there is no config, so `schema` comes back in the
+				// server's canonical (sorted) key order, which differs as a raw
+				// string from the config-order kept on apply. They are
+				// semantically equal; verify identity + the rest, not the JSON
+				// byte-string. Content is covered by the create/update checks.
+				ImportStateVerifyIgnore: []string{"schema"},
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					id, err := troopID(s)
 					if err != nil {
