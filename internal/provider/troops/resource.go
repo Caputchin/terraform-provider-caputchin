@@ -77,6 +77,13 @@ func (r *troopResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"owner_email": schema.StringAttribute{
+				Description: "Email of the troop's owning account. For a troop this provider manages that is the caller's own account email (caller is owner/manager).",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }

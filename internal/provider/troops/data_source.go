@@ -30,13 +30,14 @@ func (d *troopDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Description: "Look up an existing Caputchin troop by id.",
 		Attributes: map[string]schema.Attribute{
-			"id":         schema.StringAttribute{Required: true, Description: "Troop identifier."},
-			"name":       schema.StringAttribute{Computed: true, Description: "Troop name."},
-			"account_id": schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
-			"kind":       schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
-			"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
-			"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
-			"can_manage": schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
+			"id":          schema.StringAttribute{Required: true, Description: "Troop identifier."},
+			"name":        schema.StringAttribute{Computed: true, Description: "Troop name."},
+			"account_id":  schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
+			"kind":        schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
+			"tier":        schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
+			"created_at":  schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
+			"can_manage":  schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
+			"owner_email": schema.StringAttribute{Computed: true, Description: "Email of the troop's owning account. Returned only to callers who manage the troop; null otherwise."},
 		},
 	}
 }

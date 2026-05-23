@@ -25,13 +25,14 @@ type troopListDataSource struct {
 }
 
 type troopListItemModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	AccountID types.String `tfsdk:"account_id"`
-	Kind      types.String `tfsdk:"kind"`
-	Tier      types.String `tfsdk:"tier"`
-	CreatedAt types.Int64  `tfsdk:"created_at"`
-	CanManage types.Bool   `tfsdk:"can_manage"`
+	ID         types.String `tfsdk:"id"`
+	Name       types.String `tfsdk:"name"`
+	AccountID  types.String `tfsdk:"account_id"`
+	Kind       types.String `tfsdk:"kind"`
+	Tier       types.String `tfsdk:"tier"`
+	CreatedAt  types.Int64  `tfsdk:"created_at"`
+	CanManage  types.Bool   `tfsdk:"can_manage"`
+	OwnerEmail types.String `tfsdk:"owner_email"`
 }
 
 type troopListModel struct {
@@ -55,13 +56,14 @@ func (d *troopListDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Description: "Visible troops.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id":         schema.StringAttribute{Computed: true, Description: "Troop identifier."},
-						"name":       schema.StringAttribute{Computed: true, Description: "Troop name."},
-						"account_id": schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
-						"kind":       schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
-						"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
-						"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
-						"can_manage": schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
+						"id":          schema.StringAttribute{Computed: true, Description: "Troop identifier."},
+						"name":        schema.StringAttribute{Computed: true, Description: "Troop name."},
+						"account_id":  schema.StringAttribute{Computed: true, Description: "Owning account identifier."},
+						"kind":        schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
+						"tier":        schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
+						"created_at":  schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
+						"can_manage":  schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
+						"owner_email": schema.StringAttribute{Computed: true, Description: "Email of the troop's owning account. Returned only for troops the caller manages; null otherwise."},
 					},
 				},
 			},
@@ -93,13 +95,14 @@ func (d *troopListDataSource) Read(ctx context.Context, _ datasource.ReadRequest
 	items := make([]troopListItemModel, 0, len(env.Troops))
 	for _, t := range env.Troops {
 		items = append(items, troopListItemModel{
-			ID:        types.StringValue(t.ID),
-			Name:      types.StringValue(t.Name),
-			AccountID: types.StringValue(t.AccountID),
-			Kind:      types.StringValue(t.Kind),
-			Tier:      types.StringValue(t.Tier),
-			CreatedAt: types.Int64Value(t.CreatedAt),
-			CanManage: types.BoolValue(t.CanManage),
+			ID:         types.StringValue(t.ID),
+			Name:       types.StringValue(t.Name),
+			AccountID:  types.StringValue(t.AccountID),
+			Kind:       types.StringValue(t.Kind),
+			Tier:       types.StringValue(t.Tier),
+			CreatedAt:  types.Int64Value(t.CreatedAt),
+			CanManage:  types.BoolValue(t.CanManage),
+			OwnerEmail: ownerEmailValue(t.OwnerEmail),
 		})
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, troopListModel{Troops: items})...)
