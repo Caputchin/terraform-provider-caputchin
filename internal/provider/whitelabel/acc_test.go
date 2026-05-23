@@ -127,9 +127,14 @@ func testAccPresetConfig(values string) string {
 	return fmt.Sprintf(`
 resource "caputchin_troop" "test" { name = "tf-acc-override-preset" }
 
-resource "caputchin_white_label_preset" "test" {
+resource "caputchin_customized_game" "test" {
   troop_id = caputchin_troop.test.id
   game_id  = %q
+}
+
+resource "caputchin_white_label_preset" "test" {
+  troop_id = caputchin_troop.test.id
+  game_id  = caputchin_customized_game.test.game_id
   axis     = "configuration"
   name     = "hard"
   values   = %q
@@ -204,9 +209,14 @@ func testAccSchemaConfig(schema string) string {
 	return fmt.Sprintf(`
 resource "caputchin_troop" "test" { name = "tf-acc-override-schema" }
 
-resource "caputchin_custom_game_schema" "test" {
+resource "caputchin_customized_game" "test" {
   troop_id = caputchin_troop.test.id
   game_id  = %q
+}
+
+resource "caputchin_custom_game_schema" "test" {
+  troop_id = caputchin_troop.test.id
+  game_id  = caputchin_customized_game.test.game_id
   axis     = "skin"
   schema   = %q
 }

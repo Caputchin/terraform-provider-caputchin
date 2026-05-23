@@ -3,12 +3,12 @@
 page_title: "caputchin_white_label_preset Resource - caputchin"
 subcategory: ""
 description: |-
-  A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of troop_id (troop-wide baseline) or site_id (per-site override). Omit game_id for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). Changing scope, game, axis, or name forces replacement.
+  A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of troop_id (troop-wide baseline) or site_id (per-site override). Omit game_id for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a caputchin_customized_game for the same scope + game and set game_id = caputchin_customized_game.<name>.game_id so it applies first, else the API rejects the write with game-not-registered. Changing scope, game, axis, or name forces replacement.
 ---
 
 # caputchin_white_label_preset (Resource)
 
-A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). Changing scope, game, axis, or name forces replacement.
+A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, axis, or name forces replacement.
 
 ## Example Usage
 
@@ -18,7 +18,8 @@ resource "caputchin_troop" "marketing" {
 }
 
 # Widget-shell (white-label) preset, Apex tier. Applies to every site key
-# under the troop. Omit game_id for widget-shell presets.
+# under the troop. Omit game_id for widget-shell presets — they need no game
+# registration.
 resource "caputchin_white_label_preset" "midnight" {
   troop_id = caputchin_troop.marketing.id
   axis     = "skin"
@@ -29,11 +30,18 @@ resource "caputchin_white_label_preset" "midnight" {
   })
 }
 
-# Game-axis preset. Tier depends on the axis: configuration is Solo+,
-# skin / locale are Alpha+. game_id selects the game (it may contain slashes).
-resource "caputchin_white_label_preset" "leaf_hard" {
+# A game-axis preset requires the game registered first. Declare the parent
+# and reference its game_id so Terraform creates it before the preset.
+resource "caputchin_customized_game" "leaf" {
   troop_id = caputchin_troop.marketing.id
   game_id  = "caputchin/games/leaf"
+}
+
+# Game-axis preset. Tier depends on the axis: configuration is Solo+,
+# skin / locale are Alpha+. game_id references the customized_game above.
+resource "caputchin_white_label_preset" "leaf_hard" {
+  troop_id = caputchin_troop.marketing.id
+  game_id  = caputchin_customized_game.leaf.game_id
   axis     = "configuration"
   name     = "hard"
   values = jsonencode({
@@ -42,6 +50,8 @@ resource "caputchin_white_label_preset" "leaf_hard" {
 }
 
 # Per-site override. Overrides the troop baseline for one site key only.
+# A widget-shell (locale) preset here (no game_id), so it needs no game
+# registration.
 resource "caputchin_site_key" "blog" {
   name     = "blog-prod"
   troop_id = caputchin_troop.marketing.id
@@ -65,7 +75,7 @@ resource "caputchin_white_label_preset" "blog_en" {
 
 - `axis` (String) Override axis: `locale`, `skin`, or `configuration`. Forces replacement.
 - `name` (String) Preset name. Forces replacement (rename = destroy + recreate).
-- `values` (String) JSON object of preset leaf values (use `jsonencode({...})`). Empty / null leaves are not persisted server-side, so omit keys you do not override. Compared semantically, so key order and whitespace never produce a diff.
+- `values` (String) JSON object of preset leaf values (use `jsonencode({...})`). Empty-string / null leaves are dropped to match what the API persists (no perpetual diff), so they neither apply nor drift. Compared semantically, so key order and whitespace never produce a diff.
 
 ### Optional
 

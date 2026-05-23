@@ -56,7 +56,7 @@ func (r *presetResource) Metadata(_ context.Context, req resource.MetadataReques
 
 func (r *presetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). Changing scope, game, axis, or name forces replacement.",
+		Description: "A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, axis, or name forces replacement.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:   "Synthetic resource id encoding the composite key as `scope|id|game|axis|name` (scope is troop|site; game empty for a widget-shell preset). Matches the import id.",
@@ -92,9 +92,10 @@ func (r *presetResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				PlanModifiers: requiresReplace(),
 			},
 			"values": schema.StringAttribute{
-				Description: "JSON object of preset leaf values (use `jsonencode({...})`). Empty / null leaves are not persisted server-side, so omit keys you do not override. Compared semantically, so key order and whitespace never produce a diff.",
-				Required:    true,
-				CustomType:  jsontypes.NormalizedType{},
+				Description:   "JSON object of preset leaf values (use `jsonencode({...})`). Empty-string / null leaves are dropped to match what the API persists (no perpetual diff), so they neither apply nor drift. Compared semantically, so key order and whitespace never produce a diff.",
+				Required:      true,
+				CustomType:    jsontypes.NormalizedType{},
+				PlanModifiers: []planmodifier.String{dropEmptyLeavesModifier()},
 			},
 			"updated_at": schema.StringAttribute{
 				Description: "Server timestamp (ISO 8601) of the last write.",
