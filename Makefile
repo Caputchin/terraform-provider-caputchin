@@ -23,7 +23,7 @@ vet:
 	go vet ./...
 
 docs:
-	tfplugindocs generate
+	tfplugindocs generate --provider-name caputchin
 
 release-snapshot:
 	goreleaser release --snapshot --clean
