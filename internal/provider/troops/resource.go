@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 
@@ -67,6 +68,13 @@ func (r *troopResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Computed:    true,
 				PlanModifiers: []planmodifier.Int64{
 					int64UseStateForUnknown{},
+				},
+			},
+			"can_manage": schema.BoolAttribute{
+				Description: "Whether the calling principal can manage this troop. Always true for a troop this provider manages (created on the caller's own account).",
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
 				},
 			},
 		},

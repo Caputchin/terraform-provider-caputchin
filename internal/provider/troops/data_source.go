@@ -36,6 +36,7 @@ func (d *troopDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 			"kind":       schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
 			"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
 			"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
+			"can_manage": schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
 		},
 	}
 }

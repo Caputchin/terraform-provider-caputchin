@@ -31,6 +31,7 @@ type troopListItemModel struct {
 	Kind      types.String `tfsdk:"kind"`
 	Tier      types.String `tfsdk:"tier"`
 	CreatedAt types.Int64  `tfsdk:"created_at"`
+	CanManage types.Bool   `tfsdk:"can_manage"`
 }
 
 type troopListModel struct {
@@ -60,6 +61,7 @@ func (d *troopListDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 						"kind":       schema.StringAttribute{Computed: true, Description: "Troop kind (`personal` or `shared`)."},
 						"tier":       schema.StringAttribute{Computed: true, Description: "Plan tier inherited from the owning account."},
 						"created_at": schema.Int64Attribute{Computed: true, Description: "Creation timestamp in milliseconds since the Unix epoch."},
+						"can_manage": schema.BoolAttribute{Computed: true, Description: "Whether the calling principal can manage this troop (owning account/account-PAT, or the principal's membership `manage` permission)."},
 					},
 				},
 			},
@@ -97,6 +99,7 @@ func (d *troopListDataSource) Read(ctx context.Context, _ datasource.ReadRequest
 			Kind:      types.StringValue(t.Kind),
 			Tier:      types.StringValue(t.Tier),
 			CreatedAt: types.Int64Value(t.CreatedAt),
+			CanManage: types.BoolValue(t.CanManage),
 		})
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, troopListModel{Troops: items})...)

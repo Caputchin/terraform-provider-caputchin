@@ -19,6 +19,7 @@ type troopModel struct {
 	Kind      types.String `tfsdk:"kind"`
 	Tier      types.String `tfsdk:"tier"`
 	CreatedAt types.Int64  `tfsdk:"created_at"`
+	CanManage types.Bool   `tfsdk:"can_manage"`
 }
 
 // troopEnvelope is the {troop: {...}} envelope every troop route returns.
@@ -37,6 +38,7 @@ type apiTroop struct {
 	Kind      string `json:"kind"`
 	Tier      string `json:"tier"`
 	CreatedAt int64  `json:"created_at"`
+	CanManage bool   `json:"can_manage"`
 }
 
 func (t apiTroop) toModel() troopModel {
@@ -47,5 +49,6 @@ func (t apiTroop) toModel() troopModel {
 		Kind:      types.StringValue(t.Kind),
 		Tier:      types.StringValue(t.Tier),
 		CreatedAt: types.Int64Value(t.CreatedAt),
+		CanManage: types.BoolValue(t.CanManage),
 	}
 }
