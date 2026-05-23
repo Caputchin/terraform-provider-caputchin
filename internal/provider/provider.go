@@ -19,6 +19,7 @@ import (
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/sites"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/tokens"
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/troops"
+	"github.com/caputchin/terraform-provider-caputchin/internal/provider/whitelabel"
 )
 
 const (
@@ -98,6 +99,9 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 		sites.NewConfigResource,
 		sites.NewHostedVerificationResource,
 		tokens.NewResource,
+		whitelabel.NewPresetResource,
+		whitelabel.NewSchemaResource,
+		whitelabel.NewGameResource,
 	}
 }
 
