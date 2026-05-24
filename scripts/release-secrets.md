@@ -18,7 +18,7 @@ then store the canonical copy in the `infra-core` Infisical project:
 |---|---|---|
 | `TF_PROVIDER_GPG_PRIVATE_KEY` | full contents of `gpg-private-key.asc` | Includes the `-----BEGIN/END PGP PRIVATE KEY BLOCK-----` markers |
 | `TF_PROVIDER_GPG_PASSPHRASE` | the passphrase you chose | Required to decrypt the key in CI |
-| `TF_PROVIDER_GPG_FINGERPRINT` | `gpg --list-secret-keys --keyid-format=long releases@caputchin.com` | 40-char fingerprint, no spaces |
+| `TF_PROVIDER_GPG_FINGERPRINT` | `gpg --list-secret-keys --keyid-format=long info@caputchin.com` | 40-char fingerprint, no spaces |
 
 ## Mirror into GitHub Actions secrets
 

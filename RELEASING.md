@@ -40,7 +40,7 @@ repo secret (and your password manager / Infisical as the canonical copy).
 gpg --full-generate-key
 # RSA and RSA, 4096 bits, does not expire (0)
 # Name:    Caputchin Releases
-# Email:   releases@caputchin.com
+# Email:   info@caputchin.com
 # Comment: terraform-provider-caputchin signing
 # Passphrase: choose a strong one and store it
 ```
@@ -48,11 +48,11 @@ gpg --full-generate-key
 Note the 40-char fingerprint and export both halves:
 
 ```sh
-gpg --list-secret-keys --keyid-format=long --with-colons releases@caputchin.com \
+gpg --list-secret-keys --keyid-format=long --with-colons info@caputchin.com \
   | awk -F: '/^fpr:/{print $10; exit}'
 
-gpg --armor --export-secret-keys releases@caputchin.com > gpg-private-key.asc   # private
-gpg --armor --export releases@caputchin.com > gpg-public-key.asc                # public
+gpg --armor --export-secret-keys info@caputchin.com > gpg-private-key.asc   # private
+gpg --armor --export info@caputchin.com > gpg-public-key.asc                # public
 ```
 
 ### 2. Add the signing secrets to this repository
