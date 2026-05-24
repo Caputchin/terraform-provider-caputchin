@@ -32,7 +32,7 @@ terraform {
 }
 
 provider "caputchin" {
-  # Endpoint defaults to https://api.caputchin.com. Override with the
+  # Endpoint defaults to https://caputchin.com/api. Override with the
   # `endpoint` attribute or the CAPUTCHIN_ENDPOINT environment variable.
 
   # Management token. Also reads CAPUTCHIN_MANAGEMENT_TOKEN env var.
@@ -83,7 +83,7 @@ See [`docs/`](docs/) for the full schema reference (also rendered on the Terrafo
 
 | Argument | Type | Default | Notes |
 |---|---|---|---|
-| `endpoint` | string | `https://api.caputchin.com` | Override for staging or local development |
+| `endpoint` | string | `https://caputchin.com/api` | Override for staging or local development |
 | `management_token` | string (sensitive) | reads `CAPUTCHIN_MANAGEMENT_TOKEN` env if unset | Management API PAT (see [management API docs](https://caputchin.com/docs/management-api)) |
 
 ## OpenTofu lock file
