@@ -82,14 +82,23 @@ release pipeline). Both are scoped to selected repositories, so add
 
 ### 4. Register the public key and the provider on the registries
 
-**Terraform Registry**
+**Terraform Registry (managed through HCP Terraform)**
 
-1. Sign in at <https://registry.terraform.io/sign-in> with the GitHub account
-   that administers the `Caputchin` org.
-2. `User Settings > Signing Keys > New GPG Key` and paste `gpg-public-key.asc`.
-3. `Publish > Provider`, select the `Caputchin` org, select
-   `terraform-provider-caputchin`, confirm. The first scan may find no versions;
-   that is fine. It re-scans after the first tag is pushed.
+Public-registry publishing now happens inside HCP Terraform (`app.terraform.io`);
+`registry.terraform.io` login redirects there. Steps:
+
+1. Create a free HCP Terraform account and organization at <https://app.terraform.io>
+   (sign in with GitHub; you become a member of the org `owners` team).
+2. Install the **Terraform Cloud GitHub App** on the `Caputchin` GitHub org
+   (requires GitHub org admin).
+3. Claim the namespace: org sidebar **Registry → Public namespaces → New Namespace**,
+   select the `Caputchin` GitHub account, **Create Namespace**.
+4. Add the signing key: **Registry → Public namespaces**, select the namespace,
+   **Settings** (upper-right) **→ New GPG Key**, paste the ASCII-armored
+   `gpg-public-key.asc`, **Add GPG Key**.
+5. Publish the provider: from the namespace artifacts, publish the
+   `terraform-provider-caputchin` repo. The first scan finds no versions until the
+   first tag is pushed; that is expected.
 
 **OpenTofu Registry**
 
