@@ -32,7 +32,9 @@ output "marketing_troop_id" {
 ### Read-Only
 
 - `account_id` (String) Owning account identifier.
+- `can_manage` (Boolean) Whether the calling principal can manage this troop. Always true for a troop this provider manages (created on the caller's own account).
 - `created_at` (Number) Creation timestamp in milliseconds since the Unix epoch.
 - `id` (String) Server-issued troop identifier.
 - `kind` (String) Troop kind. Always `shared` for resources managed by this provider.
+- `owner_email` (String) Email of the troop's owning account. For a troop this provider manages that is the caller's own account email (caller is owner/manager).
 - `tier` (String) Plan tier inherited from the owning account. Read-only.
