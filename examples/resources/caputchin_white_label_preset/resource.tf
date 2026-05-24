@@ -47,7 +47,7 @@ resource "caputchin_white_label_preset" "blog_en" {
   axis    = "locale"
   name    = "en"
   values = jsonencode({
-    _iso       = "en"
+    _lang      = "en"
     main_title = "Verify you are human"
   })
 }
