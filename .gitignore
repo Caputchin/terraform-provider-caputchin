@@ -34,4 +34,7 @@ override.tf.json
 # QA notes (gitignored per workspace convention)
 qa-notes.md
 
+# Release signing keys — NEVER commit (exported locally for secret upload; see RELEASING.md)
+*.asc
+
 CL*
