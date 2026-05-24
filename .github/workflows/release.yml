@@ -1,19 +1,62 @@
 name: release
 
+# Zero-touch release pipeline.
+#
+# 1. On every push to main, release-please aggregates Conventional Commits and
+#    maintains an open "release vX.Y.Z" PR with the computed version bump and a
+#    CHANGELOG update.
+# 2. Merging that PR makes release-please create the git tag + GitHub Release
+#    (notes generated from the commits).
+# 3. In the same run, the goreleaser job builds every OS/arch, GPG-signs the
+#    checksums, and appends the artifacts to the release release-please made.
+# 4. The Terraform / OpenTofu registries poll the repo and index the new tag.
+#
+# One-time prerequisites (see RELEASING.md): GPG_PRIVATE_KEY + PASSPHRASE repo
+# secrets, the caputchin-release GitHub App + RELEASE_APP_ID /
+# RELEASE_APP_PRIVATE_KEY granted to this repo, and the public signing key
+# registered on both registries.
+
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+  workflow_dispatch: {}
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      # Root package (path ".") emits UNPREFIXED outputs; only non-root paths get
+      # the "<path>--" prefix (that prefix is what the SDK monorepo workflow uses).
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # App token (not GITHUB_TOKEN) so the release PR's commits trigger the
+      # test workflow and the push can pass branch protection if enabled.
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
   goreleaser:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          # Check out the tag release-please just created; GoReleaser reads the
+          # current tag to compute the version. Full history for the build.
+          ref: ${{ needs.release-please.outputs.tag_name }}
           fetch-depth: 0
 
       - uses: actions/setup-go@v5
@@ -30,7 +73,7 @@ jobs:
 
       - uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: '~> v2'
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

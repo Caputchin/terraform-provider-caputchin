@@ -66,9 +66,15 @@ signs:
       - "${artifact}"
 
 release:
+  # release-please creates the GitHub Release (tag + notes from Conventional
+  # Commits) when its release PR merges; GoReleaser then appends the signed
+  # cross-platform artifacts to that existing release rather than creating a
+  # second one.
+  mode: append
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
 
 changelog:
+  # release-please owns the changelog (CHANGELOG.md + GitHub Release body).
   disable: true
