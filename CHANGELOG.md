@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Caputchin/terraform-provider-caputchin/compare/v1.0.0...v1.0.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* **ci:** build single arm v6 variant to avoid goreleaser archive name collision ([9db2e69](https://github.com/Caputchin/terraform-provider-caputchin/commit/9db2e6983cb55df72fec6d6248d3da872ee7dac9))
+
 ## 1.0.0 (2026-05-25)
 
 
