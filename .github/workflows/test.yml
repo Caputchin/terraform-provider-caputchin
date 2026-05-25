@@ -32,7 +32,9 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62.2
+          # Must be built with Go >= the go.mod toolchain (go1.24.x); v1.62.2's
+          # official binary is built with go1.23 and refuses to lint a 1.24 target.
+          version: v1.64.8
 
       - name: install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.20.1
