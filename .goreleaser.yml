@@ -25,9 +25,11 @@ builds:
       - arm64
       - '386'
       - arm
+    # Single arm variant (v6, the broadest-compatible). Building both v6 and v7
+    # collides because the archive name template keys on {Os}_{Arch} only, and
+    # the Terraform Registry serves one arm build per OS regardless.
     goarm:
       - '6'
-      - '7'
     ignore:
       - goos: darwin
         goarch: '386'
