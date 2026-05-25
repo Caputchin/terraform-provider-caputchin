@@ -17,7 +17,7 @@ terraform {
   required_providers {
     caputchin = {
       source  = "caputchin/caputchin"
-      version = "~> 0.1"
+      version = "~> 1.0"
     }
   }
 }

@@ -32,7 +32,16 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62.2
+          # Must be built with Go >= the go.mod toolchain (go1.24.x); v1.62.2's
+          # official binary is built with go1.23 and refuses to lint a 1.24 target.
+          version: v1.64.8
+
+      # tfplugindocs needs the terraform CLI to export the provider schema. Install
+      # it on PATH so tfplugindocs uses it instead of auto-downloading (the auto
+      # download verifies against HashiCorp's release GPG key, which has expired).
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - name: install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.20.1
