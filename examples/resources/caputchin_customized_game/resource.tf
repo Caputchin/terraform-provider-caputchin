@@ -15,4 +15,10 @@ resource "caputchin_troop" "marketing" {
 resource "caputchin_customized_game" "leaf" {
   troop_id = caputchin_troop.marketing.id
   game_id  = "caputchin/games/leaf"
+
+  # Optional: re-pin automatically when a newer version passes the server-side
+  # replay check. Default false (the install stays on its snapshot until you
+  # taint + re-create, which re-pins to the current version). The computed
+  # `pinned_version` and `update_available` attributes are read-only.
+  auto_update = true
 }

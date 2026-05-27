@@ -33,6 +33,12 @@ resource "caputchin_troop" "marketing" {
 resource "caputchin_customized_game" "leaf" {
   troop_id = caputchin_troop.marketing.id
   game_id  = "caputchin/games/leaf"
+
+  # Optional: re-pin automatically when a newer version passes the server-side
+  # replay check. Default false (the install stays on its snapshot until you
+  # taint + re-create, which re-pins to the current version). The computed
+  # `pinned_version` and `update_available` attributes are read-only.
+  auto_update = true
 }
 ```
 
@@ -45,6 +51,7 @@ resource "caputchin_customized_game" "leaf" {
 
 ### Optional
 
+- `auto_update` (Boolean) When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check. Default false. Note: there is no one-shot "update now" attribute (Terraform is declarative); to advance the pin on demand, taint + re-create this resource, which re-pins to the current version.
 - `site_id` (String) Site id. Exactly one of troop_id / site_id is required. Forces replacement.
 - `source` (String) `marketplace` or `custom`. Omit to auto-derive from the marketplace catalog (present ⇒ marketplace, else custom).
 - `troop_id` (String) Troop id. Exactly one of troop_id / site_id is required. Forces replacement.
@@ -52,6 +59,8 @@ resource "caputchin_customized_game" "leaf" {
 ### Read-Only
 
 - `id` (String) Synthetic resource id encoding the composite key as `scope|id|game` (scope is troop|site). Matches the import id.
+- `pinned_version` (String) Vendored snapshot id this install serves. Null for custom / not-yet-vendored games. Read-only.
+- `update_available` (Boolean) True when a newer self-check-passed version exists and auto_update is off. Read-only.
 
 ## Import
 

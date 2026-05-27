@@ -64,16 +64,22 @@ type schemaEnvelope struct {
 
 // gameModel is the Terraform shape for caputchin_customized_game (registry row).
 type gameModel struct {
-	ID      types.String `tfsdk:"id"`
-	TroopID types.String `tfsdk:"troop_id"`
-	SiteID  types.String `tfsdk:"site_id"`
-	GameID  types.String `tfsdk:"game_id"`
-	Source  types.String `tfsdk:"source"`
+	ID              types.String `tfsdk:"id"`
+	TroopID         types.String `tfsdk:"troop_id"`
+	SiteID          types.String `tfsdk:"site_id"`
+	GameID          types.String `tfsdk:"game_id"`
+	Source          types.String `tfsdk:"source"`
+	AutoUpdate      types.Bool   `tfsdk:"auto_update"`
+	PinnedVersion   types.String `tfsdk:"pinned_version"`
+	UpdateAvailable types.Bool   `tfsdk:"update_available"`
 }
 
 type gameWire struct {
-	GameID string `json:"game_id"`
-	Source string `json:"source"`
+	GameID          string  `json:"game_id"`
+	Source          string  `json:"source"`
+	AutoUpdate      bool    `json:"auto_update"`
+	PinnedVersionID *string `json:"pinned_version_id"`
+	UpdateAvailable bool    `json:"update_available"`
 }
 
 type gameEnvelope struct {

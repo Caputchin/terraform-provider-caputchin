@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -72,7 +74,35 @@ func (r *gameResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 					stringvalidator.OneOf("marketplace", "custom"),
 				},
 			},
+			"auto_update": schema.BoolAttribute{
+				Description: "When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check. Default false. Note: there is no one-shot \"update now\" attribute (Terraform is declarative); to advance the pin on demand, taint + re-create this resource, which re-pins to the current version.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"pinned_version": schema.StringAttribute{
+				Description: "Vendored snapshot id this install serves. Null for custom / not-yet-vendored games. Read-only.",
+				Computed:    true,
+			},
+			"update_available": schema.BoolAttribute{
+				Description: "True when a newer self-check-passed version exists and auto_update is off. Read-only.",
+				Computed:    true,
+			},
 		},
+	}
+}
+
+// applyWire maps the management API game envelope onto the Terraform model.
+func applyWire(m *gameModel, w gameWire) {
+	m.Source = types.StringValue(w.Source)
+	m.AutoUpdate = types.BoolValue(w.AutoUpdate)
+	m.UpdateAvailable = types.BoolValue(w.UpdateAvailable)
+	if w.PinnedVersionID != nil {
+		m.PinnedVersion = types.StringValue(*w.PinnedVersionID)
+	} else {
+		m.PinnedVersion = types.StringNull()
 	}
 }
 
@@ -123,7 +153,7 @@ func (r *gameResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		resp.Diagnostics.AddError("customized-game-read-failed", err.Error())
 		return
 	}
-	state.Source = types.StringValue(env.Game.Source)
+	applyWire(&state, env.Game)
 	state.ID = types.StringValue(buildGameID(state))
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -134,10 +164,17 @@ func (r *gameResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	r.register(ctx, &plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
+	// Only auto_update is mutable in place (game_id / scope force replacement).
+	// PATCH it rather than re-register: a re-register would re-pin to the current
+	// version, which is the "manual update" semantics, not a preference toggle.
+	body := map[string]any{"auto_update": plan.AutoUpdate.ValueBool()}
+	var env gameEnvelope
+	if err := r.client.Patch(ctx, gamePath(plan.TroopID, plan.SiteID, plan.GameID), body, &env); err != nil {
+		resp.Diagnostics.AddError("customized-game-update-failed", err.Error())
 		return
 	}
+	applyWire(&plan, env.Game)
+	plan.ID = types.StringValue(buildGameID(plan))
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -180,11 +217,14 @@ func (r *gameResource) register(ctx context.Context, m *gameModel, diags *diag.D
 	if isSet(m.Source) {
 		body["source"] = m.Source.ValueString()
 	}
+	if !m.AutoUpdate.IsNull() && !m.AutoUpdate.IsUnknown() {
+		body["auto_update"] = m.AutoUpdate.ValueBool()
+	}
 	var env gameEnvelope
 	if err := r.client.Post(ctx, gamesPath(m.TroopID, m.SiteID), body, &env); err != nil {
 		diags.AddError("customized-game-register-failed", err.Error())
 		return
 	}
-	m.Source = types.StringValue(env.Game.Source)
+	applyWire(m, env.Game)
 	m.ID = types.StringValue(buildGameID(*m))
 }
