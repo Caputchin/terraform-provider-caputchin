@@ -46,7 +46,7 @@ func (d *accountDataSource) Metadata(_ context.Context, req datasource.MetadataR
 
 func (d *accountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Metadata for the Caputchin account that owns the provider's management token.\n\nIntended for account-level credentials (session cookie or account-PAT). Per ADR-0027, once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.",
+		Description: "Metadata for the Caputchin account that owns the provider's management token.\n\nIntended for account-level credentials (session cookie or account-PAT). Once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.",
 		Attributes: map[string]schema.Attribute{
 			"id":         schema.StringAttribute{Computed: true, Description: "Account identifier."},
 			"email":      schema.StringAttribute{Computed: true, Description: "Account email address."},

@@ -6,7 +6,7 @@ resource "caputchin_site_key" "blog" {
   name     = "blog-prod"
   troop_id = caputchin_troop.marketing.id
 
-  # Bump this to trigger an in-place secret rotation (ADR-0051). The
+  # Bump this to trigger an in-place secret rotation. The
   # site `id` and public `key` stay the same; only the `secret`
   # changes. Initial Create ignores the value (the mint already
   # returns a fresh secret).
@@ -39,7 +39,7 @@ resource "caputchin_site_key" "blog_scheduled" {
 }
 
 # Hand the secret to your secrets manager. Sensitive but lands in
-# Terraform state (ADR-0051); treat the state file as secret-bearing.
+# Terraform state; treat the state file as secret-bearing.
 output "blog_site_secret" {
   value     = caputchin_site_key.blog.secret
   sensitive = true

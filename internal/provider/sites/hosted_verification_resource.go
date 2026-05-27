@@ -56,7 +56,7 @@ func (r *hostedVerificationResource) Metadata(_ context.Context, req resource.Me
 
 func (r *hostedVerificationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Hosted-verification configuration for a site (Alpha tier or above, per ADR-0007). Singleton per `site_id`: one configuration row, upserted on every apply via PUT. Define exactly one `caputchin_hosted_verification` per `site_id`; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set `enabled = false` and re-apply before destroy if you want the server-side row neutralized.",
+		Description: "Hosted-verification configuration for a site (Alpha tier or above). Singleton per `site_id`: one configuration row, upserted on every apply via PUT. Define exactly one `caputchin_hosted_verification` per `site_id`; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set `enabled = false` and re-apply before destroy if you want the server-side row neutralized.",
 		Attributes: map[string]schema.Attribute{
 			"site_id": schema.StringAttribute{
 				Description: "Identifier of the site this hosted-verification config belongs to. Changing this attribute forces replacement.",

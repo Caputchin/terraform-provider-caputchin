@@ -3,12 +3,12 @@
 page_title: "caputchin_hosted_verification Resource - caputchin"
 subcategory: ""
 description: |-
-  Hosted-verification configuration for a site (Alpha tier or above, per ADR-0007). Singleton per site_id: one configuration row, upserted on every apply via PUT. Define exactly one caputchin_hosted_verification per site_id; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set enabled = false and re-apply before destroy if you want the server-side row neutralized.
+  Hosted-verification configuration for a site (Alpha tier or above). Singleton per site_id: one configuration row, upserted on every apply via PUT. Define exactly one caputchin_hosted_verification per site_id; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set enabled = false and re-apply before destroy if you want the server-side row neutralized.
 ---
 
 # caputchin_hosted_verification (Resource)
 
-Hosted-verification configuration for a site (Alpha tier or above, per ADR-0007). Singleton per `site_id`: one configuration row, upserted on every apply via PUT. Define exactly one `caputchin_hosted_verification` per `site_id`; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set `enabled = false` and re-apply before destroy if you want the server-side row neutralized.
+Hosted-verification configuration for a site (Alpha tier or above). Singleton per `site_id`: one configuration row, upserted on every apply via PUT. Define exactly one `caputchin_hosted_verification` per `site_id`; concurrent resources targeting the same site will race on update. Destroying this resource removes Terraform tracking but does NOT disable hosted verification or clear destinations server-side; set `enabled = false` and re-apply before destroy if you want the server-side row neutralized.
 
 ## Example Usage
 

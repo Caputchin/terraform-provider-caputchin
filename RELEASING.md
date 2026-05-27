@@ -103,8 +103,7 @@ Public-registry publishing now happens inside HCP Terraform (`app.terraform.io`)
 **OpenTofu Registry**
 
 Submit the public key plus provider registration as a metadata PR against
-`opentofu/registry`. See
-[ADR-0042](../docs/adr/0042-publish-terraform-provider-to-both-registries-and-rename-repo.md).
+`opentofu/registry`.
 
 ### 5. Confirm the repo is public
 

@@ -3,12 +3,12 @@
 page_title: "caputchin_white_label_preset Resource - caputchin"
 subcategory: ""
 description: |-
-  A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of troop_id (troop-wide baseline) or site_id (per-site override). Omit game_id for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a caputchin_customized_game for the same scope + game and set game_id = caputchin_customized_game.<name>.game_id so it applies first, else the API rejects the write with game-not-registered. Changing scope, game, axis, or name forces replacement.
+  A single white-label / game-customization preset. Per-preset granularity: one resource is one preset row. Set exactly one of troop_id (troop-wide baseline) or site_id (per-site override). Omit game_id for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a caputchin_customized_game for the same scope + game and set game_id = caputchin_customized_game.<name>.game_id so it applies first, else the API rejects the write with game-not-registered. Changing scope, game, axis, or name forces replacement.
 ---
 
 # caputchin_white_label_preset (Resource)
 
-A single white-label / game-customization preset (ADR-0061). Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, axis, or name forces replacement.
+A single white-label / game-customization preset. Per-preset granularity: one resource is one preset row. Set exactly one of `troop_id` (troop-wide baseline) or `site_id` (per-site override). Omit `game_id` for a widget-shell preset (Apex tier); set it for a game-axis preset (configuration = Solo+, skin/locale = Alpha+). A game-axis preset requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, axis, or name forces replacement.
 
 ## Example Usage
 

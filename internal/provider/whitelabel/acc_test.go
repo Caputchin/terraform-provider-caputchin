@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Caputchin
 // SPDX-License-Identifier: MPL-2.0
 
-// Acceptance tests for the override-pipeline resources (ADR-0061). These
+// Acceptance tests for the override-pipeline resources. These
 // drive REAL Terraform (plan/apply/import/destroy) against a LIVE management
 // API, so they are gated behind TF_ACC=1 (resource.Test skips otherwise) and
 // require CAPUTCHIN_ENDPOINT + CAPUTCHIN_MANAGEMENT_TOKEN. Run them against a

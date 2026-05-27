@@ -21,7 +21,7 @@ resource "caputchin_site_key" "blog" {
   name     = "blog-prod"
   troop_id = caputchin_troop.marketing.id
 
-  # Bump this to trigger an in-place secret rotation (ADR-0051). The
+  # Bump this to trigger an in-place secret rotation. The
   # site `id` and public `key` stay the same; only the `secret`
   # changes. Initial Create ignores the value (the mint already
   # returns a fresh secret).
@@ -54,7 +54,7 @@ resource "caputchin_site_key" "blog_scheduled" {
 }
 
 # Hand the secret to your secrets manager. Sensitive but lands in
-# Terraform state (ADR-0051); treat the state file as secret-bearing.
+# Terraform state; treat the state file as secret-bearing.
 output "blog_site_secret" {
   value     = caputchin_site_key.blog.secret
   sensitive = true
@@ -77,7 +77,7 @@ output "blog_site_public_key" {
 
 - `disabled` (Boolean) Whether the site key is disabled. Disabled keys still exist but reject verification calls. Defaults to `false`.
 - `rotation_triggers` (Map of String) Arbitrary map of string-string pairs. Any change forces full replacement of the site key (Delete + Create), yielding a fresh `id`, `key`, and `secret`. Use this for compromised-key recovery where a new public key is also required; for routine secret-only rotation, bump `secret_version` instead.
-- `secret_version` (Number) Provider-tracked rotation counter (ADR-0051). Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).
+- `secret_version` (Number) Provider-tracked rotation counter. Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).
 
 ### Read-Only
 

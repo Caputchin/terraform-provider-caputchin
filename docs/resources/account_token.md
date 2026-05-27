@@ -3,12 +3,12 @@
 page_title: "caputchin_account_token Resource - caputchin"
 subcategory: ""
 description: |-
-  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account per ADR-0028); type='troop' mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model (token rows do not consume a seat). The seat is claimed at attach time (caputchin_troop_pat); each attached troop's non-revoked attachment count is capped at accounts.seats_total - user_used. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump secret_version. The provider issues POST /tokens/{id}/rotate; the row's id and name stay stable, the prefix rotates together with the secret half, and the rotated value lands in secret per ADR-0056. Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
+  A Caputchin management token (Personal Access Token). type='account' mints a master PAT (free, capped at 1 active per account); type='troop' mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model (token rows do not consume a seat). The seat is claimed at attach time (caputchin_troop_pat); each attached troop's non-revoked attachment count is capped at accounts.seats_total - user_used. The secret is returned only at creation; the resource stores it sensitively in state. Both name and type are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump secret_version. The provider issues POST /tokens/{id}/rotate; the row's id and name stay stable, the prefix rotates together with the secret half, and the rotated value lands in secret. Attach troop-PATs to specific troops via the separate caputchin_troop_pat resource.
 ---
 
 # caputchin_account_token (Resource)
 
-A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account per ADR-0028); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model (token rows do not consume a seat). The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate; the row's `id` and `name` stay stable, the `prefix` rotates together with the secret half, and the rotated value lands in `secret` per ADR-0056. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
+A Caputchin management token (Personal Access Token). `type='account'` mints a master PAT (free, capped at 1 active per account); `type='troop'` mints a troop-scoped PAT. Minting itself is free under the per-troop-axis seat model (token rows do not consume a seat). The seat is claimed at attach time (`caputchin_troop_pat`); each attached troop's non-revoked attachment count is capped at `accounts.seats_total - user_used`. The secret is returned only at creation; the resource stores it sensitively in state. Both `name` and `type` are immutable post-mint; changing either replaces the token (the management API does not support PATCH on tokens). To rotate the credential in place without losing troop attachments, bump `secret_version`. The provider issues POST /tokens/{id}/rotate; the row's `id` and `name` stay stable, the `prefix` rotates together with the secret half, and the rotated value lands in `secret`. Attach troop-PATs to specific troops via the separate `caputchin_troop_pat` resource.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ resource "caputchin_account_token" "automation" {
   type = "account"
 }
 
-# In-place rotation (ADR-0056). Bump secret_version to issue a fresh credential
+# In-place rotation. Bump secret_version to issue a fresh credential
 # without destroying the resource. The token id and name stay stable; the
 # prefix rotates together with the secret half (refer to tokens across rotation
 # by id or name, not prefix). Any troop attachments survive untouched. The
@@ -52,12 +52,12 @@ output "ci_prod_token" {
 
 ### Optional
 
-- `secret_version` (Number) Provider-tracked rotation counter (ADR-0056). Bump the value to trigger an in-place credential rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. The token row's `id`, `name`, and `type` are unchanged; the `prefix` rotates together with the secret. Any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh credential). Refused by the API if the calling token is the rotation target.
+- `secret_version` (Number) Provider-tracked rotation counter. Bump the value to trigger an in-place credential rotation: the provider issues POST /tokens/{id}/rotate and writes the new value into the `secret` attribute. The token row's `id`, `name`, and `type` are unchanged; the `prefix` rotates together with the secret. Any troop attachments survive. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate regardless of the planned version (the mint already returns a fresh credential). Refused by the API if the calling token is the rotation target.
 - `type` (String) Token type. `account` (master, capped at 1 active per account, free) or `troop` (per-troop-scope; mint is free, seat is claimed at attach time). Defaults to `troop`. Immutable; changing forces replacement.
 
 ### Read-Only
 
 - `created_at` (Number) Creation timestamp in milliseconds since the Unix epoch.
 - `id` (String) Server-issued token identifier.
-- `prefix` (String) Display-friendly prefix of the token value (first 16 chars). Rotates together with the secret half on every in-place rotation (ADR-0056); refer to tokens across rotation by `id` or `name`, not `prefix`.
+- `prefix` (String) Display-friendly prefix of the token value (first 16 chars). Rotates together with the secret half on every in-place rotation; refer to tokens across rotation by `id` or `name`, not `prefix`.
 - `secret` (String, Sensitive) Full bearer-token value. Returned ONCE at creation and on every in-place rotation (`secret_version` bump). Pipe to a secrets store immediately. The value is stored sensitively in state; treat the state file as secret-bearing. Lost values cannot be recovered; rotate via `secret_version` to mint a fresh value into state without destroying the resource.

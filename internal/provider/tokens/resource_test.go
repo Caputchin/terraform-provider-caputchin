@@ -112,7 +112,7 @@ func TestTokenDelete_Succeeds(t *testing.T) {
 }
 
 // TestTokenRotate_HappyPath exercises the POST /tokens/{id}/rotate wire
-// contract via the client directly (ADR-0056). The provider's Update
+// contract via the client directly. The provider's Update
 // branch for secret_version bumps is exercised end-to-end at the
 // acceptance layer; this test pins the wire shape so a route-side
 // rename of `token` or `prefix` would surface here. Mirrors the

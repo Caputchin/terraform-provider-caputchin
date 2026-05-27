@@ -14,7 +14,7 @@ import (
 // shape (apiSite) is decoded separately; see troops/model.go for the same
 // pattern and rationale. SecretVersion and RotationTriggers are
 // provider-side knobs (not echoed by the API) that drive in-place
-// rotation and full-replacement rotation respectively per ADR-0051.
+// rotation and full-replacement rotation respectively.
 type siteModel struct {
 	ID               types.String `tfsdk:"id"`
 	Key              types.String `tfsdk:"key"`

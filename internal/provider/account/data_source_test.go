@@ -43,7 +43,7 @@ func TestAccountRead_Decodes(t *testing.T) {
 
 // TestAccountRead_TroopPATForbiddenPassthrough validates the APIError-code
 // passthrough contract. The specific error code is forward-compat with
-// ADR-0027 (troop-PAT rejection on me/* routes is not yet enforced by the
+// the troop-PAT rejection on me/* routes (not yet enforced by the
 // platform; see me/account/route.ts:7-15).
 func TestAccountRead_TroopPATForbiddenPassthrough(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

@@ -10,7 +10,7 @@ resource "caputchin_account_token" "automation" {
   type = "account"
 }
 
-# In-place rotation (ADR-0056). Bump secret_version to issue a fresh credential
+# In-place rotation. Bump secret_version to issue a fresh credential
 # without destroying the resource. The token id and name stay stable; the
 # prefix rotates together with the secret half (refer to tokens across rotation
 # by id or name, not prefix). Any troop attachments survive untouched. The

@@ -88,7 +88,7 @@ func (r *siteResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"secret_version": schema.Int64Attribute{
-				Description: "Provider-tracked rotation counter (ADR-0051). Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).",
+				Description: "Provider-tracked rotation counter. Bump the value to trigger an in-place secret rotation: the provider issues POST /sites/{id}/rotate-secret and writes the new value into the `secret` attribute. Site `id` and `key` are unchanged. Defaults to `0`; set explicitly to start at a different baseline. Initial Create does NOT call rotate-secret regardless of the planned version (the mint already returns a fresh secret).",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(0),
@@ -211,7 +211,7 @@ func (r *siteResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		plannedVersion = state.SecretVersion
 	}
 
-	// Secret rotation branch (ADR-0051). If the planned secret_version
+	// Secret rotation branch. If the planned secret_version
 	// differs from state, call POST /sites/{id}/rotate-secret first;
 	// the route mutates in place and returns a fresh secret. Other
 	// field changes (name, disabled) follow via PATCH below; both
@@ -297,7 +297,7 @@ func (r *siteResource) ImportState(ctx context.Context, req resource.ImportState
 	// The imported row has no secret in state; Read won't populate it
 	// because the API never returns it after the initial create.
 	// Customers recover by bumping secret_version on the next plan,
-	// which fires the rotation branch in Update (ADR-0051) and writes a
+	// which fires the rotation branch in Update and writes a
 	// fresh value into state.
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret"), types.StringNull())...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("secret_version"), types.Int64Value(0))...)

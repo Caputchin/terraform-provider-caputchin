@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 // Package tokens implements the caputchin_account_token resource: minting
-// and revoking management tokens (`account` and `troop` types per
-// ADR-0028). Attachment of troop-PATs to specific troops happens via the
+// and revoking management tokens (`account` and `troop` types).
+// Attachment of troop-PATs to specific troops happens via the
 // caputchin_troop_pat resource in the `troops` package.
 package tokens
 
@@ -13,7 +13,7 @@ import (
 
 // tokenModel is the Terraform state shape for caputchin_account_token.
 // SecretVersion is a provider-tracked rotation counter (not echoed by the
-// API) that drives in-place credential rotation per ADR-0056. Bumping
+// API) that drives in-place credential rotation. Bumping
 // the value in a plan fires POST /v1/management/tokens/{id}/rotate on
 // the next apply; the token row's id and name stay stable, the prefix
 // rotates together with the secret half, and the rotated values land in
@@ -64,7 +64,7 @@ type apiToken struct {
 // rotateEnvelope matches the POST /tokens/{id}/rotate response: { token,
 // prefix } where token is the replacement bearer-token string returned
 // ONCE and prefix is the rotated 16-char leading prefix (same as
-// token.slice(0, 16)). Both rotate together per ADR-0056; the token row's
+// token.slice(0, 16)). Both rotate together; the token row's
 // id and name are unchanged across rotation.
 type rotateEnvelope struct {
 	Token  string `json:"token"`

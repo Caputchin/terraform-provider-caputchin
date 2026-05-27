@@ -3,7 +3,7 @@
 
 // Package whitelabel implements the override-pipeline resources
 // (caputchin_white_label_preset, caputchin_custom_game_schema,
-// caputchin_customized_game) per ADR-0061. Every resource targets exactly
+// caputchin_customized_game). Every resource targets exactly
 // one scope (a troop troop-wide baseline, or a site per-site override) and
 // reaches the management API's per-axis endpoints. Game ids ride a query
 // param, never the path, because they contain slashes.

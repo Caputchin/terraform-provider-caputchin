@@ -111,7 +111,7 @@ func (r *memberResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"would_consume_seat": schema.BoolAttribute{
-				Description: "Whether this membership consumed a fresh user seat at creation time (per ADR-0023 + ADR-0031: sharing across troops within the same account is free, so subsequent memberships for an account already in another troop here come back as `false`). Snapshot at Create; preserved through subsequent reads (the management API does not echo it on GET).",
+				Description: "Whether this membership consumed a fresh user seat at creation time (sharing across troops within the same account is free, so subsequent memberships for an account already in another troop here come back as `false`). Snapshot at Create; preserved through subsequent reads (the management API does not echo it on GET).",
 				Computed:    true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),

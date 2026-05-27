@@ -3,12 +3,12 @@
 page_title: "caputchin_custom_game_schema Resource - caputchin"
 subcategory: ""
 description: |-
-  Per-axis editable-field schema for a custom (non-marketplace) game, declaring the keys customers may override (ADR-0061). Set exactly one of troop_id / site_id. Carries no plan-tier gate (it is metadata describing the shape of presets), but requires the game registered first: declare a caputchin_customized_game for the same scope + game and set game_id = caputchin_customized_game.<name>.game_id so it applies first, else the API rejects the write with game-not-registered. Changing scope, game, or axis forces replacement.
+  Per-axis editable-field schema for a custom (non-marketplace) game, declaring the keys customers may override. Set exactly one of troop_id / site_id. Carries no plan-tier gate (it is metadata describing the shape of presets), but requires the game registered first: declare a caputchin_customized_game for the same scope + game and set game_id = caputchin_customized_game.<name>.game_id so it applies first, else the API rejects the write with game-not-registered. Changing scope, game, or axis forces replacement.
 ---
 
 # caputchin_custom_game_schema (Resource)
 
-Per-axis editable-field schema for a custom (non-marketplace) game, declaring the keys customers may override (ADR-0061). Set exactly one of `troop_id` / `site_id`. Carries no plan-tier gate (it is metadata describing the shape of presets), but requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, or axis forces replacement.
+Per-axis editable-field schema for a custom (non-marketplace) game, declaring the keys customers may override. Set exactly one of `troop_id` / `site_id`. Carries no plan-tier gate (it is metadata describing the shape of presets), but requires the game registered first: declare a `caputchin_customized_game` for the same scope + game and set `game_id = caputchin_customized_game.<name>.game_id` so it applies first, else the API rejects the write with `game-not-registered`. Changing scope, game, or axis forces replacement.
 
 ## Example Usage
 

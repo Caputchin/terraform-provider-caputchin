@@ -4,14 +4,14 @@ page_title: "caputchin_account Data Source - caputchin"
 subcategory: ""
 description: |-
   Metadata for the Caputchin account that owns the provider's management token.
-  Intended for account-level credentials (session cookie or account-PAT). Per ADR-0027, once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.
+  Intended for account-level credentials (session cookie or account-PAT). Once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.
 ---
 
 # caputchin_account (Data Source)
 
 Metadata for the Caputchin account that owns the provider's management token.
 
-Intended for account-level credentials (session cookie or account-PAT). Per ADR-0027, once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.
+Intended for account-level credentials (session cookie or account-PAT). Once troop-PAT typing ships in the platform, troop-PAT callers will be rejected with an upstream authorization error; configurations that may run under a troop-PAT should not depend on this data source.
 
 ## Example Usage
 
