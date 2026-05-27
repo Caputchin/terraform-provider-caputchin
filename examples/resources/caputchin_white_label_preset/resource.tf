@@ -3,7 +3,7 @@ resource "caputchin_troop" "marketing" {
 }
 
 # Widget-shell (white-label) preset, Apex tier. Applies to every site key
-# under the troop. Omit game_id for widget-shell presets — they need no game
+# under the troop. Omit game_id for widget-shell presets, they need no game
 # registration.
 resource "caputchin_white_label_preset" "midnight" {
   troop_id = caputchin_troop.marketing.id

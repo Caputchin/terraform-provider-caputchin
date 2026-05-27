@@ -19,8 +19,8 @@ import (
 // every plan shows a phantom update. Stripping the same leaves at plan time
 // keeps plan == state == what the API stores.
 //
-// Leaves are kept verbatim (json.RawMessage) so a kept value's exact bytes —
-// including number precision — survive untouched; only top-level key order is
+// Leaves are kept verbatim (json.RawMessage) so a kept value's exact bytes -
+// including number precision - survive untouched; only top-level key order is
 // normalized by re-marshal, which jsontypes.Normalized compares away anyway.
 type dropEmptyLeaves struct{}
 
@@ -40,7 +40,7 @@ func (dropEmptyLeaves) PlanModifyString(_ context.Context, req planmodifier.Stri
 	}
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(req.PlanValue.ValueString()), &obj); err != nil {
-		// Not a JSON object (or invalid) — leave it untouched; the
+		// Not a JSON object (or invalid) - leave it untouched; the
 		// jsontypes.Normalized type's own validation surfaces the error.
 		return
 	}

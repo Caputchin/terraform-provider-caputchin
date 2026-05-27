@@ -4,14 +4,14 @@ page_title: "caputchin_customized_game Resource - caputchin"
 subcategory: ""
 description: |-
   Registers a game in a scope's customized-games list (ADR-0061). This is the REQUIRED parent for any game-axis caputchin_white_label_preset or caputchin_custom_game_schema: those reject with game-not-registered unless the game is registered first, so declare this resource and have the children set game_id = caputchin_customized_game.<name>.game_id (which also orders creation correctly). Set exactly one of troop_id / site_id. Requires the configuration tier (Solo+).
-  WARNING: destroying this resource cascade-deletes the ENTIRE game customization for the scope — every preset (all axes) and every custom schema for the game, not just the registry row. When children reference its game_id, Terraform destroys them before this resource, so the cascade is a backstop; managing children for the same game WITHOUT that reference risks the cascade removing rows Terraform still tracks.
+  WARNING: destroying this resource cascade-deletes the ENTIRE game customization for the scope: every preset (all axes) and every custom schema for the game, not just the registry row. When children reference its game_id, Terraform destroys them before this resource, so the cascade is a backstop; managing children for the same game WITHOUT that reference risks the cascade removing rows Terraform still tracks.
 ---
 
 # caputchin_customized_game (Resource)
 
 Registers a game in a scope's customized-games list (ADR-0061). This is the REQUIRED parent for any game-axis `caputchin_white_label_preset` or `caputchin_custom_game_schema`: those reject with `game-not-registered` unless the game is registered first, so declare this resource and have the children set `game_id = caputchin_customized_game.<name>.game_id` (which also orders creation correctly). Set exactly one of `troop_id` / `site_id`. Requires the configuration tier (Solo+).
 
-WARNING: destroying this resource cascade-deletes the ENTIRE game customization for the scope — every preset (all axes) and every custom schema for the game, not just the registry row. When children reference its `game_id`, Terraform destroys them before this resource, so the cascade is a backstop; managing children for the same game WITHOUT that reference risks the cascade removing rows Terraform still tracks.
+WARNING: destroying this resource cascade-deletes the ENTIRE game customization for the scope: every preset (all axes) and every custom schema for the game, not just the registry row. When children reference its `game_id`, Terraform destroys them before this resource, so the cascade is a backstop; managing children for the same game WITHOUT that reference risks the cascade removing rows Terraform still tracks.
 
 ## Example Usage
 
