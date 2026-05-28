@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"time"
@@ -90,6 +91,63 @@ func (c *Client) Put(ctx context.Context, path string, in, out any) error {
 // Delete issues a DELETE request. The response body is discarded.
 func (c *Client) Delete(ctx context.Context, path string) error {
 	return c.do(ctx, http.MethodDelete, path, nil, nil)
+}
+
+// MultipartFile is one file part of a multipart/form-data upload.
+type MultipartFile struct {
+	FieldName string
+	Filename  string
+	Bytes     []byte
+}
+
+// PutMultipart issues a PUT request with multipart/form-data body and decodes
+// the JSON response. Used by the custom-game run-artifact resource (P13) where
+// the management endpoint accepts run.js + optional wasm/js modules as named
+// file parts.
+func (c *Client) PutMultipart(ctx context.Context, path string, parts []MultipartFile, out any) error {
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	for _, p := range parts {
+		fw, err := w.CreateFormFile(p.FieldName, p.Filename)
+		if err != nil {
+			return fmt.Errorf("multipart create form file: %w", err)
+		}
+		if _, err := fw.Write(p.Bytes); err != nil {
+			return fmt.Errorf("multipart write bytes: %w", err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("multipart close: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.endpoint+path, &body)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("User-Agent", c.ua)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("http call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		return &APIError{Status: resp.StatusCode, Code: extractErrorCode(raw), Body: string(raw)}
+	}
+	if out == nil || len(raw) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(raw, out); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) do(ctx context.Context, method, path string, in, out any) error {

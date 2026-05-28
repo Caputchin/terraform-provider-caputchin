@@ -119,3 +119,49 @@ func buildGameID(m gameModel) string {
 	kind, value := idScope(m.TroopID, m.SiteID)
 	return fmt.Sprintf("%s|%s|%s", kind, value, m.GameID.ValueString())
 }
+
+// runArtifactModel is the Terraform shape for caputchin_custom_game_run_artifact.
+type runArtifactModel struct {
+	ID           types.String `tfsdk:"id"`
+	TroopID      types.String `tfsdk:"troop_id"`
+	SiteID       types.String `tfsdk:"site_id"`
+	GameID       types.String `tfsdk:"game_id"`
+	RunPath      types.String `tfsdk:"run_path"`
+	ModulePaths  types.List   `tfsdk:"module_paths"`
+	SourceHash   types.String `tfsdk:"source_hash"`
+	VersionHash  types.String `tfsdk:"version_hash"`
+	SelfCheckOK  types.Bool   `tfsdk:"self_check_ok"`
+	UploadedAt   types.String `tfsdk:"uploaded_at"`
+}
+
+// runArtifactFileWire mirrors the api-schemas RunArtifactFile shape.
+type runArtifactFileWire struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Integrity string `json:"integrity"`
+	Size      *int64 `json:"size"`
+}
+
+// runArtifactDetailWire mirrors RunArtifactDetail. The detail endpoint returns
+// this body directly (no envelope) so the resource unmarshals into the wire
+// type at the top level.
+type runArtifactDetailWire struct {
+	VersionHash string                `json:"version_hash"`
+	UploadedAt  string                `json:"uploaded_at"`
+	SelfCheckOK bool                  `json:"self_check_ok"`
+	Run         runArtifactFileWire   `json:"run"`
+	Modules     []runArtifactFileWire `json:"modules"`
+}
+
+// runArtifactUploadResponseWire mirrors the UploadRunArtifactResponse schema.
+type runArtifactUploadResponseWire struct {
+	VersionHash string `json:"version_hash"`
+	SelfCheckOK bool   `json:"self_check_ok"`
+	Idempotent  bool   `json:"idempotent"`
+}
+
+// buildRunArtifactID: scope|id|game.
+func buildRunArtifactID(m runArtifactModel) string {
+	kind, value := idScope(m.TroopID, m.SiteID)
+	return fmt.Sprintf("%s|%s|%s", kind, value, m.GameID.ValueString())
+}

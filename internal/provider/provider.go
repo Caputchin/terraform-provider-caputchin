@@ -104,6 +104,7 @@ func (p *caputchinProvider) Resources(_ context.Context) []func() resource.Resou
 		whitelabel.NewPresetResource,
 		whitelabel.NewSchemaResource,
 		whitelabel.NewGameResource,
+		whitelabel.NewRunArtifactResource,
 	}
 }
 

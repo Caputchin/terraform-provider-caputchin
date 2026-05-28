@@ -61,3 +61,22 @@ func gamePath(troopID, siteID, gameID types.String) string {
 	q.Set("game", gameID.ValueString())
 	return fmt.Sprintf("/v1/management/%s/%s/game-customization/game?%s", scope, id, q.Encode())
 }
+
+// runArtifactPath builds the run-artifact upload / delete endpoint (multipart
+// PUT writes; DELETE removes). The active bytes streaming GET lives at the
+// same path; metadata reads use runArtifactDetailPath.
+func runArtifactPath(troopID, siteID, gameID types.String) string {
+	scope, id := scopeSegment(troopID, siteID)
+	q := url.Values{}
+	q.Set("game", gameID.ValueString())
+	return fmt.Sprintf("/v1/management/%s/%s/game-customization/run-artifact?%s", scope, id, q.Encode())
+}
+
+// runArtifactDetailPath builds the metadata endpoint for the active run
+// artifact (JSON response, not the bytes stream).
+func runArtifactDetailPath(troopID, siteID, gameID types.String) string {
+	scope, id := scopeSegment(troopID, siteID)
+	q := url.Values{}
+	q.Set("game", gameID.ValueString())
+	return fmt.Sprintf("/v1/management/%s/%s/game-customization/run-artifact/detail?%s", scope, id, q.Encode())
+}
