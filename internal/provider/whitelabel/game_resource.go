@@ -5,6 +5,7 @@ package whitelabel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -75,7 +76,7 @@ func (r *gameResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"auto_update": schema.BoolAttribute{
-				Description: "When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check. Default false. Note: there is no one-shot \"update now\" attribute (Terraform is declarative); to advance the pin on demand, taint + re-create this resource, which re-pins to the current version.",
+				Description: "When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check (non-destructive, server-driven). Default false. This is the declarative way to track the latest version. There is no one-shot \"update now\" attribute (Terraform is declarative): a manual re-pin is an imperative API action (`POST /game-customization/game/re-pin`) outside Terraform's model. Tainting + recreating also advances the pin, but it is destructive (the destroy cascade-deletes the game's presets + schemas first), so prefer auto_update.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.Bool{
@@ -222,6 +223,17 @@ func (r *gameResource) register(ctx context.Context, m *gameModel, diags *diag.D
 	}
 	var env gameEnvelope
 	if err := r.client.Post(ctx, gamesPath(m.TroopID, m.SiteID), body, &env); err != nil {
+		// Register is create-once: the API 409s a game already registered for the
+		// scope (e.g. registered out-of-band via the dashboard). Point the user at
+		// import rather than letting the generic error obscure the cause.
+		var apiErr *client.APIError
+		if errors.As(err, &apiErr) && apiErr.Code == "game-already-registered" {
+			diags.AddError(
+				"customized-game-already-registered",
+				fmt.Sprintf("Game %q is already registered for this scope. Import it instead: terraform import <resource> '%s'.", m.GameID.ValueString(), buildGameID(*m)),
+			)
+			return
+		}
 		diags.AddError("customized-game-register-failed", err.Error())
 		return
 	}

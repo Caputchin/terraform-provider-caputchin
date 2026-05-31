@@ -17,8 +17,9 @@ resource "caputchin_customized_game" "leaf" {
   game_id  = "caputchin/games/leaf"
 
   # Optional: re-pin automatically when a newer version passes the server-side
-  # replay check. Default false (the install stays on its snapshot until you
-  # taint + re-create, which re-pins to the current version). The computed
-  # `pinned_version` and `update_available` attributes are read-only.
+  # replay check (non-destructive, server-driven) - the declarative way to track
+  # the latest. Default false (the install stays on its snapshot). A one-off
+  # manual re-pin is an imperative API action outside Terraform's model. The
+  # computed `pinned_version` and `update_available` attributes are read-only.
   auto_update = true
 }

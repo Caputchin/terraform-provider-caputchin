@@ -35,9 +35,10 @@ resource "caputchin_customized_game" "leaf" {
   game_id  = "caputchin/games/leaf"
 
   # Optional: re-pin automatically when a newer version passes the server-side
-  # replay check. Default false (the install stays on its snapshot until you
-  # taint + re-create, which re-pins to the current version). The computed
-  # `pinned_version` and `update_available` attributes are read-only.
+  # replay check (non-destructive, server-driven) - the declarative way to track
+  # the latest. Default false (the install stays on its snapshot). A one-off
+  # manual re-pin is an imperative API action outside Terraform's model. The
+  # computed `pinned_version` and `update_available` attributes are read-only.
   auto_update = true
 }
 ```
@@ -51,7 +52,7 @@ resource "caputchin_customized_game" "leaf" {
 
 ### Optional
 
-- `auto_update` (Boolean) When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check. Default false. Note: there is no one-shot "update now" attribute (Terraform is declarative); to advance the pin on demand, taint + re-create this resource, which re-pins to the current version.
+- `auto_update` (Boolean) When true, the install re-pins automatically when the indexer ships a newer version that passes the server-side replay check (non-destructive, server-driven). Default false. This is the declarative way to track the latest version. There is no one-shot "update now" attribute (Terraform is declarative): a manual re-pin is an imperative API action (`POST /game-customization/game/re-pin`) outside Terraform's model. Tainting + recreating also advances the pin, but it is destructive (the destroy cascade-deletes the game's presets + schemas first), so prefer auto_update.
 - `site_id` (String) Site id. Exactly one of troop_id / site_id is required. Forces replacement.
 - `source` (String) `marketplace` or `custom`. Omit to auto-derive from the marketplace catalog (present ⇒ marketplace, else custom).
 - `troop_id` (String) Troop id. Exactly one of troop_id / site_id is required. Forces replacement.
