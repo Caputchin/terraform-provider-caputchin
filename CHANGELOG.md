@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0](https://github.com/Caputchin/terraform-provider-caputchin/compare/v1.0.1...v1.1.0) (2026-06-01)
+
+
+### Features
+
+* **provider:** auto_update + computed pinned_version/update_available on caputchin_customized_game ([9e1515b](https://github.com/Caputchin/terraform-provider-caputchin/commit/9e1515b1343617a675dd36efbb48ca7bdd274ce4))
+* **provider:** caputchin_custom_game_run_artifact resource (P13 slice 5) ([8702fc5](https://github.com/Caputchin/terraform-provider-caputchin/commit/8702fc582242a5afa1973be0de390a82715d83e1))
+* **provider:** caputchin_site_security_settings + caputchin_troop_security_settings resources (Phase 11) ([d63cba3](https://github.com/Caputchin/terraform-provider-caputchin/commit/d63cba3518646dda306018eb10a04967f0b51cea))
+* **provider:** surface register 409 with import hint + clarify re-pin is an imperative action ([c8be6d1](https://github.com/Caputchin/terraform-provider-caputchin/commit/c8be6d164a5c2684cff7f569268c9b4e3f9fd109))
+
 ## [1.0.1](https://github.com/Caputchin/terraform-provider-caputchin/compare/v1.0.0...v1.0.1) (2026-05-25)
 
 
