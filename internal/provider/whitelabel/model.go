@@ -122,16 +122,16 @@ func buildGameID(m gameModel) string {
 
 // runArtifactModel is the Terraform shape for caputchin_custom_game_run_artifact.
 type runArtifactModel struct {
-	ID           types.String `tfsdk:"id"`
-	TroopID      types.String `tfsdk:"troop_id"`
-	SiteID       types.String `tfsdk:"site_id"`
-	GameID       types.String `tfsdk:"game_id"`
-	RunPath      types.String `tfsdk:"run_path"`
-	ModulePaths  types.List   `tfsdk:"module_paths"`
-	SourceHash   types.String `tfsdk:"source_hash"`
-	VersionHash  types.String `tfsdk:"version_hash"`
-	SelfCheckOK  types.Bool   `tfsdk:"self_check_ok"`
-	UploadedAt   types.String `tfsdk:"uploaded_at"`
+	ID          types.String `tfsdk:"id"`
+	TroopID     types.String `tfsdk:"troop_id"`
+	SiteID      types.String `tfsdk:"site_id"`
+	GameID      types.String `tfsdk:"game_id"`
+	RunPath     types.String `tfsdk:"run_path"`
+	ModulePaths types.List   `tfsdk:"module_paths"`
+	SourceHash  types.String `tfsdk:"source_hash"`
+	VersionHash types.String `tfsdk:"version_hash"`
+	SelfCheckOK types.Bool   `tfsdk:"self_check_ok"`
+	UploadedAt  types.String `tfsdk:"uploaded_at"`
 }
 
 // runArtifactFileWire mirrors the api-schemas RunArtifactFile shape.
