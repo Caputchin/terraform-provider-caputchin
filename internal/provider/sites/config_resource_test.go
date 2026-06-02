@@ -26,6 +26,7 @@ func TestSiteConfigGet_DecodesNullables(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"site_id": "site_xyz",
 			"config": map[string]any{
+				"instrumentation":          true,
 				"difficulty":               4,
 				"challenge_count":          50,
 				"obfuscation_level":        5,
@@ -46,6 +47,9 @@ func TestSiteConfigGet_DecodesNullables(t *testing.T) {
 	}
 	if env.Config.Difficulty != 4 {
 		t.Errorf("expected difficulty=4, got %d", env.Config.Difficulty)
+	}
+	if !env.Config.Instrumentation {
+		t.Errorf("expected instrumentation=true, got %v", env.Config.Instrumentation)
 	}
 	if env.Config.BlockNonBrowserUA != nil {
 		t.Errorf("expected null block_non_browser_ua, got %v", env.Config.BlockNonBrowserUA)
@@ -97,6 +101,26 @@ func TestSiteConfigPatch_OnlyChangedFields(t *testing.T) {
 	}
 	if v, _ := body["difficulty"].(int64); v != 5 {
 		t.Errorf("expected difficulty=5, got %v", body["difficulty"])
+	}
+}
+
+func TestSiteConfigPatch_InstrumentationToggle(t *testing.T) {
+	r := &siteConfigResource{}
+	plan := siteConfigModel{
+		SiteID:          types.StringValue("site_xyz"),
+		Instrumentation: types.BoolValue(false),
+	}
+	state := siteConfigModel{
+		SiteID:          types.StringValue("site_xyz"),
+		Instrumentation: types.BoolValue(true),
+	}
+	body := r.buildPatchBody(plan, state)
+	v, ok := body["instrumentation"]
+	if !ok {
+		t.Fatalf("expected instrumentation in body, got %v", body)
+	}
+	if b, _ := v.(bool); b != false {
+		t.Errorf("expected instrumentation=false, got %v", v)
 	}
 }
 

@@ -15,6 +15,7 @@ type siteConfigModel struct {
 	SiteID                 types.String `tfsdk:"site_id"`
 	PowDifficulty          types.Int64  `tfsdk:"pow_difficulty"`
 	PowChallengeCount      types.Int64  `tfsdk:"pow_challenge_count"`
+	Instrumentation        types.Bool   `tfsdk:"instrumentation"`
 	ObfuscationLevel       types.Int64  `tfsdk:"obfuscation_level"`
 	BlockAutomatedBrowsers types.Bool   `tfsdk:"block_automated_browsers"`
 	BlockNonBrowserUA      types.Bool   `tfsdk:"block_non_browser_ua"`
@@ -34,6 +35,7 @@ type siteConfigEnvelope struct {
 // are nullable on the wire (pointers / explicit nulls); represented here as
 // pointers so the JSON decoder can distinguish absent / null / value.
 type apiSiteConfig struct {
+	Instrumentation        bool     `json:"instrumentation"`
 	Difficulty             int64    `json:"difficulty"`
 	ChallengeCount         int64    `json:"challenge_count"`
 	ObfuscationLevel       int64    `json:"obfuscation_level"`

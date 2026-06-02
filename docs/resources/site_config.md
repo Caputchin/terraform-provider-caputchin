@@ -55,7 +55,8 @@ resource "caputchin_site_config" "blog" {
 - `block_automated_browsers` (Boolean) If true, reject sessions identified as automated browsers (Selenium, Puppeteer, etc.).
 - `block_non_browser_ua` (Boolean) If true, reject sessions whose User-Agent does not look like a browser. May be null to leave unset.
 - `cors_origins` (List of String) Allowed origins for verification calls (e.g. `["https://example.com"]`). May be null to leave unset (no CORS check).
-- `obfuscation_level` (Number) Browser-instrumentation obfuscation level (1-10).
+- `instrumentation` (Boolean) Whether the browser-instrumentation challenge runs (default true). Set false to remove the `'unsafe-eval'` Content-Security-Policy requirement from pages embedding the widget, at the cost of automated-browser detection (proof-of-work and game replay still run). `obfuscation_level` and `block_automated_browsers` only take effect while this is true.
+- `obfuscation_level` (Number) Browser-instrumentation obfuscation level (1-10). Only effective while `instrumentation` is true.
 - `pow_challenge_count` (Number) Number of proof-of-work sub-challenges per session (1-500).
 - `pow_difficulty` (Number) Proof-of-work difficulty (1-8). Higher values make the challenge harder to solve.
 - `ratelimit_max` (Number) Maximum verification requests per second (1-10000), capped at the plan tier ceiling. Values above the tier ceiling are rejected by the server. May be null to use the server's plan-tier default.

@@ -59,8 +59,13 @@ func (r *siteConfigResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					int64validator.Between(1, 500),
 				},
 			},
+			"instrumentation": schema.BoolAttribute{
+				Description: "Whether the browser-instrumentation challenge runs (default true). Set false to remove the `'unsafe-eval'` Content-Security-Policy requirement from pages embedding the widget, at the cost of automated-browser detection (proof-of-work and game replay still run). `obfuscation_level` and `block_automated_browsers` only take effect while this is true.",
+				Optional:    true,
+				Computed:    true,
+			},
 			"obfuscation_level": schema.Int64Attribute{
-				Description: "Browser-instrumentation obfuscation level (1-10).",
+				Description: "Browser-instrumentation obfuscation level (1-10). Only effective while `instrumentation` is true.",
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.Int64{
@@ -209,6 +214,9 @@ func (r *siteConfigResource) buildPatchBody(plan, state siteConfigModel) map[str
 	}
 	if changedInt(plan.PowChallengeCount, state.PowChallengeCount) {
 		body["challenge_count"] = plan.PowChallengeCount.ValueInt64()
+	}
+	if changedBool(plan.Instrumentation, state.Instrumentation) {
+		body["instrumentation"] = plan.Instrumentation.ValueBool()
 	}
 	if changedInt(plan.ObfuscationLevel, state.ObfuscationLevel) {
 		body["obfuscation_level"] = plan.ObfuscationLevel.ValueInt64()

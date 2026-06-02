@@ -28,6 +28,7 @@ func (cfg apiSiteConfig) toModel(ctx context.Context, siteID string, diags diagS
 		SiteID:                 types.StringValue(siteID),
 		PowDifficulty:          types.Int64Value(cfg.Difficulty),
 		PowChallengeCount:      types.Int64Value(cfg.ChallengeCount),
+		Instrumentation:        types.BoolValue(cfg.Instrumentation),
 		ObfuscationLevel:       types.Int64Value(cfg.ObfuscationLevel),
 		BlockAutomatedBrowsers: types.BoolValue(cfg.BlockAutomatedBrowsers),
 		BlockNonBrowserUA:      nullableBool(cfg.BlockNonBrowserUA),
