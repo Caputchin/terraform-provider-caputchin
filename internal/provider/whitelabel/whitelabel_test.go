@@ -147,7 +147,6 @@ func TestPresetWrite_WireContract(t *testing.T) {
 			},
 			"saved_at":            "2026-05-23T00:00:00.000Z",
 			"affected_site_count": 3,
-			"purge":               map[string]any{"ok": true},
 		})
 	}))
 	t.Cleanup(srv.Close)
