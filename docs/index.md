@@ -28,7 +28,7 @@ variable "caputchin_management_token" {
 }
 
 provider "caputchin" {
-  # Endpoint defaults to https://caputchin.com/api. Override with the
+  # Endpoint defaults to https://api.caputchin.com. Override with the
   # `endpoint` attribute or the CAPUTCHIN_ENDPOINT environment variable.
   management_token = var.caputchin_management_token
 }
@@ -39,5 +39,5 @@ provider "caputchin" {
 
 ### Optional
 
-- `endpoint` (String) Caputchin management API endpoint. Defaults to https://caputchin.com/api. May be overridden via the CAPUTCHIN_ENDPOINT environment variable.
+- `endpoint` (String) Caputchin management API endpoint. Defaults to https://api.caputchin.com. May be overridden via the CAPUTCHIN_ENDPOINT environment variable.
 - `management_token` (String, Sensitive) Caputchin management API token (account-PAT or troop-PAT). May be supplied via the CAPUTCHIN_MANAGEMENT_TOKEN environment variable.

@@ -13,7 +13,7 @@ variable "caputchin_management_token" {
 }
 
 provider "caputchin" {
-  # Endpoint defaults to https://caputchin.com/api. Override with the
+  # Endpoint defaults to https://api.caputchin.com. Override with the
   # `endpoint` attribute or the CAPUTCHIN_ENDPOINT environment variable.
   management_token = var.caputchin_management_token
 }

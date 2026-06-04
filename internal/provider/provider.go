@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	defaultEndpoint = "https://caputchin.com/api"
+	defaultEndpoint = "https://api.caputchin.com"
 	envEndpoint     = "CAPUTCHIN_ENDPOINT"
 	envToken        = "CAPUTCHIN_MANAGEMENT_TOKEN"
 )
@@ -54,7 +54,7 @@ func (p *caputchinProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 		Description: "Manage Caputchin troops, site keys, per-site configuration, and read account / stats data.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				Description: "Caputchin management API endpoint. Defaults to https://caputchin.com/api. May be overridden via the CAPUTCHIN_ENDPOINT environment variable.",
+				Description: "Caputchin management API endpoint. Defaults to https://api.caputchin.com. May be overridden via the CAPUTCHIN_ENDPOINT environment variable.",
 				Optional:    true,
 			},
 			"management_token": schema.StringAttribute{
