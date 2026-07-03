@@ -5,6 +5,8 @@ subcategory: ""
 description: |-
   Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.
   When require_game is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.
+  preview_mode is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, /siteverify returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
+  When reuse is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. reuse_window_ms bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); reuse_persist controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level forbid_reuse ceiling can force this off regardless of the site's own setting.
   Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 ---
 
@@ -13,6 +15,10 @@ description: |-
 Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.
 
 When `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.
+
+`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
+
+When `reuse` is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level `forbid_reuse` ceiling can force this off regardless of the site's own setting.
 
 Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 
@@ -38,9 +44,26 @@ resource "caputchin_customized_game" "leaf" {
 # only). Enabling needs at least one installed marketplace game with a
 # replayable artifact for the site (its own, as above, or inherited from the
 # troop). The API rejects the change otherwise.
+#
+# preview_mode is a development/integration aid: when effectively on (this
+# site's own setting, or the troop default when left null), the backend
+# auto-approves every verification for this site key (no game, no
+# proof-of-work), disabling bot protection while on. Sessions still record,
+# flagged preview.
+#
+# reuse grants a short-lived clearance after one successful verification, so
+# later widget mounts on this site key skip replaying the game while it is
+# valid. reuse_window_ms bounds the clearance lifetime (the server clamps it
+# to its own min/max regardless of this value). reuse_persist lets the
+# clearance survive a page reload via a first-party cookie, instead of living
+# in memory only.
 resource "caputchin_site_security_settings" "checkout" {
-  site_id      = caputchin_site_key.checkout.id
-  require_game = true
+  site_id         = caputchin_site_key.checkout.id
+  require_game    = true
+  preview_mode    = true
+  reuse           = true
+  reuse_window_ms = 60000
+  reuse_persist   = false
 
   depends_on = [caputchin_customized_game.leaf]
 }
@@ -55,4 +78,8 @@ resource "caputchin_site_security_settings" "checkout" {
 
 ### Optional
 
+- `preview_mode` (Boolean) Preview mode for this site key: when effectively on the backend auto-approves every verification (no game, proof-of-work not enforced) and /siteverify returns success. A development/integration aid that DISABLES bot protection while on; sessions still record (flagged preview). null = inherit the troop default; effective value resolves site ?? troop ?? false.
 - `require_game` (Boolean) If true, verification on this site key must be gated by a game (server-replayed); if false, verification is proof-of-work only and can be passed without playing a game.
+- `reuse` (Boolean) If true, one successful verification on this site key grants a short-lived clearance; later widget mounts present the clearance and skip replaying the game until it expires. A troop-level `forbid_reuse` ceiling overrides this to false.
+- `reuse_persist` (Boolean) If true (and `reuse` is true), the clearance survives a page reload via a first-party cookie; if false, it lives in memory only and is lost on reload.
+- `reuse_window_ms` (Number) Clearance lifetime in milliseconds while `reuse` is true. The server clamps this to its own min/max regardless of the value set here. May be null to use the server's default window.

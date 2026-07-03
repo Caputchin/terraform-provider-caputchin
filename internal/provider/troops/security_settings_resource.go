@@ -33,7 +33,7 @@ func (r *troopSecuritySettingsResource) Metadata(_ context.Context, req resource
 
 func (r *troopSecuritySettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.\n\nWhen `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
+		Description: "Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.\n\nWhen `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.\n\n`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.\n\nWhen `forbid_reuse` is true, it forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
 		Attributes: map[string]schema.Attribute{
 			"troop_id": schema.StringAttribute{
 				Description: "Identifier of the troop these settings belong to. Changing this attribute forces replacement.",
@@ -44,6 +44,16 @@ func (r *troopSecuritySettingsResource) Schema(_ context.Context, _ resource.Sch
 			},
 			"force_game": schema.BoolAttribute{
 				Description: "If true, every site key in the troop must gate verification with a game, regardless of its own setting.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"preview_mode": schema.BoolAttribute{
+				Description: "Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). true auto-approves every verification for those keys (disables bot protection). null is equivalent to false.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"forbid_reuse": schema.BoolAttribute{
+				Description: "If true, forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -143,11 +153,17 @@ func (r *troopSecuritySettingsResource) refreshState(ctx context.Context, troopI
 	sink(env.Settings.toModel(troopID))
 }
 
-// buildPatchBody emits force_game only when the plan differs from prior state.
+// buildPatchBody emits only the fields that differ from prior state.
 func (r *troopSecuritySettingsResource) buildPatchBody(plan, state troopSecuritySettingsModel) map[string]any {
 	body := map[string]any{}
 	if changedBool(plan.ForceGame, state.ForceGame) {
 		body["force_game"] = plan.ForceGame.ValueBool()
+	}
+	if changedBool(plan.PreviewMode, state.PreviewMode) {
+		body["preview_mode"] = plan.PreviewMode.ValueBool()
+	}
+	if changedBool(plan.ForbidReuse, state.ForbidReuse) {
+		body["forbid_reuse"] = plan.ForbidReuse.ValueBool()
 	}
 	return body
 }

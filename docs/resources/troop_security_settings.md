@@ -5,6 +5,8 @@ subcategory: ""
 description: |-
   Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.
   When force_game is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.
+  preview_mode sets the troop-wide default inherited by any site key that leaves its own preview_mode null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. null here is equivalent to false.
+  When forbid_reuse is true, it forces the reuse clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.
   Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 ---
 
@@ -13,6 +15,10 @@ description: |-
 Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.
 
 When `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.
+
+`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.
+
+When `forbid_reuse` is true, it forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.
 
 Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 
@@ -33,9 +39,19 @@ resource "caputchin_customized_game" "leaf" {
 # of each site key's own setting. Enabling needs at least one installed
 # troop-level marketplace game with a replayable artifact (above) so every site
 # is covered by inheritance. The API rejects the change otherwise.
+#
+# preview_mode sets the troop-wide default: any site key that leaves its own
+# preview_mode null inherits this value. When effectively on, the backend
+# auto-approves every verification for those site keys (no game, no
+# proof-of-work), disabling bot protection while on.
+#
+# forbid_reuse is a safety ceiling: it forces the reuse clearance capability
+# off for every site key in the troop, regardless of each site's own setting.
 resource "caputchin_troop_security_settings" "marketing" {
-  troop_id   = caputchin_troop.marketing.id
-  force_game = true
+  troop_id     = caputchin_troop.marketing.id
+  force_game   = true
+  preview_mode = true
+  forbid_reuse = false
 
   depends_on = [caputchin_customized_game.leaf]
 }
@@ -50,4 +66,6 @@ resource "caputchin_troop_security_settings" "marketing" {
 
 ### Optional
 
+- `forbid_reuse` (Boolean) If true, forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting.
 - `force_game` (Boolean) If true, every site key in the troop must gate verification with a game, regardless of its own setting.
+- `preview_mode` (Boolean) Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). true auto-approves every verification for those keys (disables bot protection). null is equivalent to false.

@@ -32,7 +32,7 @@ func (r *siteSecuritySettingsResource) Metadata(_ context.Context, req resource.
 
 func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
+		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\n`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.\n\nWhen `reuse` is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level `forbid_reuse` ceiling can force this off regardless of the site's own setting.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
 		Attributes: map[string]schema.Attribute{
 			"site_id": schema.StringAttribute{
 				Description: "Identifier of the site these settings belong to. Changing this attribute forces replacement.",
@@ -43,6 +43,26 @@ func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.Sche
 			},
 			"require_game": schema.BoolAttribute{
 				Description: "If true, verification on this site key must be gated by a game (server-replayed); if false, verification is proof-of-work only and can be passed without playing a game.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"preview_mode": schema.BoolAttribute{
+				Description: "Preview mode for this site key: when effectively on the backend auto-approves every verification (no game, proof-of-work not enforced) and /siteverify returns success. A development/integration aid that DISABLES bot protection while on; sessions still record (flagged preview). null = inherit the troop default; effective value resolves site ?? troop ?? false.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"reuse": schema.BoolAttribute{
+				Description: "If true, one successful verification on this site key grants a short-lived clearance; later widget mounts present the clearance and skip replaying the game until it expires. A troop-level `forbid_reuse` ceiling overrides this to false.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"reuse_window_ms": schema.Int64Attribute{
+				Description: "Clearance lifetime in milliseconds while `reuse` is true. The server clamps this to its own min/max regardless of the value set here. May be null to use the server's default window.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"reuse_persist": schema.BoolAttribute{
+				Description: "If true (and `reuse` is true), the clearance survives a page reload via a first-party cookie; if false, it lives in memory only and is lost on reload.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -142,12 +162,32 @@ func (r *siteSecuritySettingsResource) refreshState(ctx context.Context, siteIDT
 	sink(env.Settings.toModel(siteID))
 }
 
-// buildPatchBody emits require_game only when the plan differs from prior state.
-// On Create, state is the zero-value model; a set require_game is a change.
+// buildPatchBody emits only the fields that differ from prior state.
+// On Create, state is the zero-value model; a set field is a change.
 func (r *siteSecuritySettingsResource) buildPatchBody(plan, state siteSecuritySettingsModel) map[string]any {
 	body := map[string]any{}
 	if changedBool(plan.RequireGame, state.RequireGame) {
 		body["require_game"] = plan.RequireGame.ValueBool()
+	}
+	if changedBoolNullable(plan.PreviewMode, state.PreviewMode) {
+		if plan.PreviewMode.IsNull() {
+			body["preview_mode"] = nil
+		} else {
+			body["preview_mode"] = plan.PreviewMode.ValueBool()
+		}
+	}
+	if changedBool(plan.Reuse, state.Reuse) {
+		body["reuse"] = plan.Reuse.ValueBool()
+	}
+	if changedIntNullable(plan.ReuseWindowMs, state.ReuseWindowMs) {
+		if plan.ReuseWindowMs.IsNull() {
+			body["reuse_window_ms"] = nil
+		} else {
+			body["reuse_window_ms"] = plan.ReuseWindowMs.ValueInt64()
+		}
+	}
+	if changedBool(plan.ReusePersist, state.ReusePersist) {
+		body["reuse_persist"] = plan.ReusePersist.ValueBool()
 	}
 	return body
 }

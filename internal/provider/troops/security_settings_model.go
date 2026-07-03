@@ -11,25 +11,32 @@ import (
 // caputchin_troop_security_settings (the troop-wide game-gate ceiling).
 // Singleton per troop.
 type troopSecuritySettingsModel struct {
-	TroopID   types.String `tfsdk:"troop_id"`
-	ForceGame types.Bool   `tfsdk:"force_game"`
+	TroopID     types.String `tfsdk:"troop_id"`
+	ForceGame   types.Bool   `tfsdk:"force_game"`
+	PreviewMode types.Bool   `tfsdk:"preview_mode"`
+	ForbidReuse types.Bool   `tfsdk:"forbid_reuse"`
 }
 
 // troopSecuritySettingsEnvelope matches the GET / PATCH response shape:
-// `{ "troop_id": ..., "settings": { "force_game": ... } }`.
+// `{ "troop_id": ..., "settings": { "force_game": ..., "preview_mode": ...,
+// "forbid_reuse": ... } }`.
 type troopSecuritySettingsEnvelope struct {
 	TroopID  string                   `json:"troop_id"`
 	Settings apiTroopSecuritySettings `json:"settings"`
 }
 
 type apiTroopSecuritySettings struct {
-	ForceGame bool `json:"force_game"`
+	ForceGame   bool `json:"force_game"`
+	PreviewMode bool `json:"preview_mode"`
+	ForbidReuse bool `json:"forbid_reuse"`
 }
 
 func (s apiTroopSecuritySettings) toModel(troopID string) troopSecuritySettingsModel {
 	return troopSecuritySettingsModel{
-		TroopID:   types.StringValue(troopID),
-		ForceGame: types.BoolValue(s.ForceGame),
+		TroopID:     types.StringValue(troopID),
+		ForceGame:   types.BoolValue(s.ForceGame),
+		PreviewMode: types.BoolValue(s.PreviewMode),
+		ForbidReuse: types.BoolValue(s.ForbidReuse),
 	}
 }
 
