@@ -53,6 +53,13 @@ func nullableInt64(v *int64) types.Int64 {
 	return types.Int64Value(*v)
 }
 
+func nullableString(v *string) types.String {
+	if v == nil {
+		return types.StringNull()
+	}
+	return types.StringValue(*v)
+}
+
 func stringListFromSlice(ctx context.Context, v []string) (types.List, []string) {
 	if v == nil {
 		return types.ListNull(types.StringType), nil
@@ -119,6 +126,19 @@ func changedIntNullable(plan, state types.Int64) bool {
 		return false
 	}
 	return plan.ValueInt64() != state.ValueInt64()
+}
+
+func changedStringNullable(plan, state types.String) bool {
+	if plan.IsUnknown() {
+		return false
+	}
+	if plan.IsNull() != state.IsNull() {
+		return true
+	}
+	if plan.IsNull() {
+		return false
+	}
+	return plan.ValueString() != state.ValueString()
 }
 
 func changedList(plan, state types.List) bool {

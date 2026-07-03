@@ -151,6 +151,89 @@ func TestSiteSecurityPatch_OnlyChangedFields(t *testing.T) {
 	}
 }
 
+func TestSiteSecurityGet_DecodesProxy(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"site_id":  "site_xyz",
+			"settings": map[string]any{"proxy_gate": true, "proxy_ttl_seconds": 1800, "proxy_fail_mode": "closed"},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env siteSecuritySettingsEnvelope
+	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	if !env.Settings.ProxyGate {
+		t.Errorf("expected proxy_gate=true, got %v", env.Settings.ProxyGate)
+	}
+	if env.Settings.ProxyTtlSeconds == nil || *env.Settings.ProxyTtlSeconds != 1800 {
+		t.Errorf("expected proxy_ttl_seconds=1800, got %v", env.Settings.ProxyTtlSeconds)
+	}
+	if env.Settings.ProxyFailMode == nil || *env.Settings.ProxyFailMode != "closed" {
+		t.Errorf("expected proxy_fail_mode=closed, got %v", env.Settings.ProxyFailMode)
+	}
+	m := env.Settings.toModel("site_xyz")
+	if !m.ProxyGate.ValueBool() || m.ProxyTtlSeconds.ValueInt64() != 1800 || m.ProxyFailMode.ValueString() != "closed" {
+		t.Errorf("toModel mismatch: %+v", m)
+	}
+}
+
+// Nullable proxy fields (absent on the wire) decode to null (server default).
+func TestSiteSecurityGet_ProxyNullable(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"site_id":  "site_xyz",
+			"settings": map[string]any{"proxy_gate": false, "proxy_ttl_seconds": nil, "proxy_fail_mode": nil},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env siteSecuritySettingsEnvelope
+	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	m := env.Settings.toModel("site_xyz")
+	if !m.ProxyTtlSeconds.IsNull() || !m.ProxyFailMode.IsNull() {
+		t.Errorf("expected proxy ttl + fail_mode null, got %+v", m)
+	}
+}
+
+func TestSiteSecurityPatch_ProxyFields(t *testing.T) {
+	r := &siteSecuritySettingsResource{}
+
+	// plan enables the gate + sets ttl + fail mode; state is off → all three in body.
+	body := r.buildPatchBody(
+		siteSecuritySettingsModel{
+			SiteID:          types.StringValue("s"),
+			ProxyGate:       types.BoolValue(true),
+			ProxyTtlSeconds: types.Int64Value(3600),
+			ProxyFailMode:   types.StringValue("open"),
+		},
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), ProxyGate: types.BoolValue(false)},
+	)
+	if v, ok := body["proxy_gate"].(bool); !ok || !v {
+		t.Errorf("expected proxy_gate=true in body, got %v", body)
+	}
+	if v, ok := body["proxy_ttl_seconds"].(int64); !ok || v != 3600 {
+		t.Errorf("expected proxy_ttl_seconds=3600 in body, got %v", body)
+	}
+	if v, ok := body["proxy_fail_mode"].(string); !ok || v != "open" {
+		t.Errorf("expected proxy_fail_mode=open in body, got %v", body)
+	}
+
+	// Resetting ttl to null emits an explicit JSON null.
+	nb := r.buildPatchBody(
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), ProxyTtlSeconds: types.Int64Null()},
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), ProxyTtlSeconds: types.Int64Value(3600)},
+	)
+	if v, ok := nb["proxy_ttl_seconds"]; !ok || v != nil {
+		t.Errorf("expected explicit null proxy_ttl_seconds, got %v", nb)
+	}
+}
+
 func TestSiteSecurityPatch_PreviewModeOnlyChangedFields(t *testing.T) {
 	r := &siteSecuritySettingsResource{}
 

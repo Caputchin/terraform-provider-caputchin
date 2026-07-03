@@ -32,7 +32,7 @@ func (r *siteSecuritySettingsResource) Metadata(_ context.Context, req resource.
 
 func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\n`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.\n\nWhen `reuse` is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level `forbid_reuse` ceiling can force this off regardless of the site's own setting.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
+		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\n`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.\n\nWhen `reuse` is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level `forbid_reuse` ceiling can force this off regardless of the site's own setting.\n\nWhen `proxy_gate` is true, the Proxy page-gate runs a full-page interstitial in front of the whole site at your reverse proxy (for hosts that cannot embed the widget); one solve mints a short-TTL gate pass cookie that clears later requests. `proxy_ttl_seconds` bounds the pass lifetime (server-clamped); `proxy_fail_mode` (`open`/`closed`) is advisory and templates the integration snippet. The Proxy page-gate requires the Alpha tier or higher; enabling it below that is rejected by the API. The advisory `proxy_path_scope` field is managed via the dashboard / API / MCP, not this resource.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
 		Attributes: map[string]schema.Attribute{
 			"site_id": schema.StringAttribute{
 				Description: "Identifier of the site these settings belong to. Changing this attribute forces replacement.",
@@ -63,6 +63,21 @@ func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.Sche
 			},
 			"reuse_persist": schema.BoolAttribute{
 				Description: "If true (and `reuse` is true), the clearance survives a page reload via a first-party cookie; if false, it lives in memory only and is lost on reload.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_gate": schema.BoolAttribute{
+				Description: "If true, the Proxy page-gate is enabled: a full-page interstitial runs in front of the whole site at your reverse proxy, and one solve mints a short-TTL gate pass (a first-party cookie) that clears later requests. Requires the Alpha tier or higher; enabling on a lower tier is rejected by the API. The `proxy_path_scope` advisory setting is managed via the dashboard / API / MCP, not this resource.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_ttl_seconds": schema.Int64Attribute{
+				Description: "How long (seconds) one solve clears the visitor at the Proxy page-gate. The server clamps this to its own min/max regardless of the value set here. May be null to use the server's default.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_fail_mode": schema.StringAttribute{
+				Description: "What the reverse proxy should do when it can't reach the authorizer: `closed` blocks requests (safer for a login portal), `open` lets them through. Advisory — it templates the integration snippet; the proxy enforces it. May be null for the default (`closed`).",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -188,6 +203,23 @@ func (r *siteSecuritySettingsResource) buildPatchBody(plan, state siteSecuritySe
 	}
 	if changedBool(plan.ReusePersist, state.ReusePersist) {
 		body["reuse_persist"] = plan.ReusePersist.ValueBool()
+	}
+	if changedBool(plan.ProxyGate, state.ProxyGate) {
+		body["proxy_gate"] = plan.ProxyGate.ValueBool()
+	}
+	if changedIntNullable(plan.ProxyTtlSeconds, state.ProxyTtlSeconds) {
+		if plan.ProxyTtlSeconds.IsNull() {
+			body["proxy_ttl_seconds"] = nil
+		} else {
+			body["proxy_ttl_seconds"] = plan.ProxyTtlSeconds.ValueInt64()
+		}
+	}
+	if changedStringNullable(plan.ProxyFailMode, state.ProxyFailMode) {
+		if plan.ProxyFailMode.IsNull() {
+			body["proxy_fail_mode"] = nil
+		} else {
+			body["proxy_fail_mode"] = plan.ProxyFailMode.ValueString()
+		}
 	}
 	return body
 }

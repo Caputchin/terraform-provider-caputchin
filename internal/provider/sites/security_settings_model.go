@@ -10,12 +10,15 @@ import (
 // siteSecuritySettingsModel is the Terraform state shape for
 // caputchin_site_security_settings (the per-site game gate). Singleton per site.
 type siteSecuritySettingsModel struct {
-	SiteID        types.String `tfsdk:"site_id"`
-	RequireGame   types.Bool   `tfsdk:"require_game"`
-	PreviewMode   types.Bool   `tfsdk:"preview_mode"`
-	Reuse         types.Bool   `tfsdk:"reuse"`
-	ReuseWindowMs types.Int64  `tfsdk:"reuse_window_ms"`
-	ReusePersist  types.Bool   `tfsdk:"reuse_persist"`
+	SiteID          types.String `tfsdk:"site_id"`
+	RequireGame     types.Bool   `tfsdk:"require_game"`
+	PreviewMode     types.Bool   `tfsdk:"preview_mode"`
+	Reuse           types.Bool   `tfsdk:"reuse"`
+	ReuseWindowMs   types.Int64  `tfsdk:"reuse_window_ms"`
+	ReusePersist    types.Bool   `tfsdk:"reuse_persist"`
+	ProxyGate       types.Bool   `tfsdk:"proxy_gate"`
+	ProxyTtlSeconds types.Int64  `tfsdk:"proxy_ttl_seconds"`
+	ProxyFailMode   types.String `tfsdk:"proxy_fail_mode"`
 }
 
 // siteSecuritySettingsEnvelope matches the GET / PATCH response shape:
@@ -31,20 +34,26 @@ type siteSecuritySettingsEnvelope struct {
 // resolved as site ?? troop ?? false); ReuseWindowMs is nullable too (absent/null
 // falls back to the server's default window). Both are pointers here.
 type apiSiteSecuritySettings struct {
-	RequireGame   bool   `json:"require_game"`
-	PreviewMode   *bool  `json:"preview_mode"`
-	Reuse         bool   `json:"reuse"`
-	ReuseWindowMs *int64 `json:"reuse_window_ms"`
-	ReusePersist  bool   `json:"reuse_persist"`
+	RequireGame     bool    `json:"require_game"`
+	PreviewMode     *bool   `json:"preview_mode"`
+	Reuse           bool    `json:"reuse"`
+	ReuseWindowMs   *int64  `json:"reuse_window_ms"`
+	ReusePersist    bool    `json:"reuse_persist"`
+	ProxyGate       bool    `json:"proxy_gate"`
+	ProxyTtlSeconds *int64  `json:"proxy_ttl_seconds"`
+	ProxyFailMode   *string `json:"proxy_fail_mode"`
 }
 
 func (s apiSiteSecuritySettings) toModel(siteID string) siteSecuritySettingsModel {
 	return siteSecuritySettingsModel{
-		SiteID:        types.StringValue(siteID),
-		RequireGame:   types.BoolValue(s.RequireGame),
-		PreviewMode:   nullableBool(s.PreviewMode),
-		Reuse:         types.BoolValue(s.Reuse),
-		ReuseWindowMs: nullableInt64(s.ReuseWindowMs),
-		ReusePersist:  types.BoolValue(s.ReusePersist),
+		SiteID:          types.StringValue(siteID),
+		RequireGame:     types.BoolValue(s.RequireGame),
+		PreviewMode:     nullableBool(s.PreviewMode),
+		Reuse:           types.BoolValue(s.Reuse),
+		ReuseWindowMs:   nullableInt64(s.ReuseWindowMs),
+		ReusePersist:    types.BoolValue(s.ReusePersist),
+		ProxyGate:       types.BoolValue(s.ProxyGate),
+		ProxyTtlSeconds: nullableInt64(s.ProxyTtlSeconds),
+		ProxyFailMode:   nullableString(s.ProxyFailMode),
 	}
 }
