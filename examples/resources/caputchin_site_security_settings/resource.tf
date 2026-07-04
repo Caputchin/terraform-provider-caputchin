@@ -19,10 +19,11 @@ resource "caputchin_customized_game" "leaf" {
 # troop). The API rejects the change otherwise.
 #
 # preview_mode is a development/integration aid: when effectively on (this
-# site's own setting, or the troop default when left null), the backend
-# auto-approves every verification for this site key (no game, no
-# proof-of-work), disabling bot protection while on. Sessions still record,
-# flagged preview.
+# site's own setting, or the troop default when left null), the site key
+# still serves its normal experience (the game and its shells/chrome when
+# gated), but the backend auto-approves every verification regardless of the
+# solve (game replay and cap not enforced), disabling bot protection while
+# on. Sessions still record, flagged preview.
 #
 # reuse grants a short-lived clearance after one successful verification, so
 # later widget mounts on this site key skip replaying the game while it is

@@ -5,8 +5,8 @@ subcategory: ""
 description: |-
   Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.
   When force_game is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.
-  preview_mode sets the troop-wide default inherited by any site key that leaves its own preview_mode null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. null here is equivalent to false.
-  When forbid_reuse is true, it forces the reuse clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.
+  preview_mode sets the troop-wide default inherited by any site key that leaves its own preview_mode null (site ?? troop ?? false). When the effective value is true, a gated site key still serves its normal experience (the game and its shells/chrome), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. null here is equivalent to false.
+  Verification reuse (reuse, reuse_window_ms, reuse_persist) sets the troop-wide default inherited by any site key that leaves its own value null (site ?? troop ?? default). When effectively on, one solve grants a short-lived clearance that lets later widget mounts skip replaying the game while it is valid; reuse_window_ms bounds the clearance lifetime (server-clamped) and reuse_persist stores it in a first-party cookie versus memory only. null here means no troop default.
   Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 ---
 
@@ -16,9 +16,9 @@ Troop-wide security settings (the game-gate ceiling). Singleton: one row per tro
 
 When `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.
 
-`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.
+`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, a gated site key still serves its normal experience (the game and its shells/chrome), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.
 
-When `forbid_reuse` is true, it forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.
+Verification reuse (`reuse`, `reuse_window_ms`, `reuse_persist`) sets the troop-wide default inherited by any site key that leaves its own value null (site ?? troop ?? default). When effectively on, one solve grants a short-lived clearance that lets later widget mounts skip replaying the game while it is valid; `reuse_window_ms` bounds the clearance lifetime (server-clamped) and `reuse_persist` stores it in a first-party cookie versus memory only. `null` here means no troop default.
 
 Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 
@@ -41,17 +41,22 @@ resource "caputchin_customized_game" "leaf" {
 # is covered by inheritance. The API rejects the change otherwise.
 #
 # preview_mode sets the troop-wide default: any site key that leaves its own
-# preview_mode null inherits this value. When effectively on, the backend
-# auto-approves every verification for those site keys (no game, no
-# proof-of-work), disabling bot protection while on.
+# preview_mode null inherits this value. When effectively on, those site keys
+# still serve their normal experience (the game and its shells/chrome), but
+# the backend auto-approves every verification regardless of the solve (game
+# replay and cap not enforced), disabling bot protection while on.
 #
-# forbid_reuse is a safety ceiling: it forces the reuse clearance capability
-# off for every site key in the troop, regardless of each site's own setting.
+# reuse / reuse_window_ms / reuse_persist set the troop-wide verification-reuse
+# default: any site key that leaves its own value null inherits these. When
+# effectively on, one solve grants a short-lived clearance so later widget mounts
+# skip replaying the game.
 resource "caputchin_troop_security_settings" "marketing" {
-  troop_id     = caputchin_troop.marketing.id
-  force_game   = true
-  preview_mode = true
-  forbid_reuse = false
+  troop_id        = caputchin_troop.marketing.id
+  force_game      = true
+  preview_mode    = true
+  reuse           = false
+  reuse_window_ms = 300000
+  reuse_persist   = false
 
   depends_on = [caputchin_customized_game.leaf]
 }
@@ -66,6 +71,8 @@ resource "caputchin_troop_security_settings" "marketing" {
 
 ### Optional
 
-- `forbid_reuse` (Boolean) If true, forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting.
 - `force_game` (Boolean) If true, every site key in the troop must gate verification with a game, regardless of its own setting.
-- `preview_mode` (Boolean) Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). true auto-approves every verification for those keys (disables bot protection). null is equivalent to false.
+- `preview_mode` (Boolean) Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). When effectively on, those site keys still serve their normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced), disabling bot protection while on. null is equivalent to false.
+- `reuse` (Boolean) Troop-wide verification-reuse default inherited by any site key that sets none (site ?? troop ?? false). When effectively on, one solve grants a short-lived clearance so later widget mounts skip replaying the game. null means no troop default.
+- `reuse_persist` (Boolean) Troop-wide default for whether the reuse clearance survives a page reload via a first-party cookie, inherited by any site key that sets none. null is equivalent to false.
+- `reuse_window_ms` (Number) Troop-wide default clearance lifetime in milliseconds, inherited by any site key that sets none. The server clamps this to its own min/max. null means no troop default (the server default applies).

@@ -5,8 +5,8 @@ subcategory: ""
 description: |-
   Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.
   When require_game is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.
-  preview_mode is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, /siteverify returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
-  When reuse is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. reuse_window_ms bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); reuse_persist controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level forbid_reuse ceiling can force this off regardless of the site's own setting.
+  preview_mode is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the site key still serves its normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced, /siteverify returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
+  Verification reuse (reuse, reuse_window_ms, reuse_persist) is a default+override setting: null on this site inherits the troop default (resolved site ?? troop ?? default). When effectively on, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. reuse_window_ms bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); reuse_persist controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only.
   When proxy_gate is true, the Proxy page-gate runs a full-page interstitial in front of the whole site at your reverse proxy (for hosts that cannot embed the widget); one solve mints a short-TTL gate pass cookie that clears later requests. proxy_ttl_seconds bounds the pass lifetime (server-clamped); proxy_fail_mode (open/closed) is advisory and templates the integration snippet. The Proxy page-gate requires the Alpha tier or higher; enabling it below that is rejected by the API. The advisory proxy_path_scope field is managed via the dashboard / API / MCP, not this resource.
   Destroying this resource removes Terraform tracking but does NOT reset the server-side setting.
 ---
@@ -17,9 +17,9 @@ Per-site security settings for a Caputchin site key (the game gate). Singleton: 
 
 When `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.
 
-`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the backend auto-approves every verification for this site key (no game, proof-of-work not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
+`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the site key still serves its normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.
 
-When `reuse` is true, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only. A troop-level `forbid_reuse` ceiling can force this off regardless of the site's own setting.
+Verification reuse (`reuse`, `reuse_window_ms`, `reuse_persist`) is a default+override setting: null on this site inherits the troop default (resolved site ?? troop ?? default). When effectively on, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only.
 
 When `proxy_gate` is true, the Proxy page-gate runs a full-page interstitial in front of the whole site at your reverse proxy (for hosts that cannot embed the widget); one solve mints a short-TTL gate pass cookie that clears later requests. `proxy_ttl_seconds` bounds the pass lifetime (server-clamped); `proxy_fail_mode` (`open`/`closed`) is advisory and templates the integration snippet. The Proxy page-gate requires the Alpha tier or higher; enabling it below that is rejected by the API. The advisory `proxy_path_scope` field is managed via the dashboard / API / MCP, not this resource.
 
@@ -49,10 +49,11 @@ resource "caputchin_customized_game" "leaf" {
 # troop). The API rejects the change otherwise.
 #
 # preview_mode is a development/integration aid: when effectively on (this
-# site's own setting, or the troop default when left null), the backend
-# auto-approves every verification for this site key (no game, no
-# proof-of-work), disabling bot protection while on. Sessions still record,
-# flagged preview.
+# site's own setting, or the troop default when left null), the site key
+# still serves its normal experience (the game and its shells/chrome when
+# gated), but the backend auto-approves every verification regardless of the
+# solve (game replay and cap not enforced), disabling bot protection while
+# on. Sessions still record, flagged preview.
 #
 # reuse grants a short-lived clearance after one successful verification, so
 # later widget mounts on this site key skip replaying the game while it is
@@ -81,11 +82,11 @@ resource "caputchin_site_security_settings" "checkout" {
 
 ### Optional
 
-- `preview_mode` (Boolean) Preview mode for this site key: when effectively on the backend auto-approves every verification (no game, proof-of-work not enforced) and /siteverify returns success. A development/integration aid that DISABLES bot protection while on; sessions still record (flagged preview). null = inherit the troop default; effective value resolves site ?? troop ?? false.
-- `proxy_fail_mode` (String) What the reverse proxy should do when it can't reach the authorizer: `closed` blocks requests (safer for a login portal), `open` lets them through. Advisory — it templates the integration snippet; the proxy enforces it. May be null for the default (`closed`).
+- `preview_mode` (Boolean) Preview mode for this site key: when effectively on the site key still serves its normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced) and /siteverify returns success. A development/integration aid that DISABLES bot protection while on; sessions still record (flagged preview). null = inherit the troop default; effective value resolves site ?? troop ?? false.
+- `proxy_fail_mode` (String) What the reverse proxy should do when it can't reach the authorizer: `closed` blocks requests (safer for a login portal), `open` lets them through. Advisory: it templates the integration snippet; the proxy enforces it. May be null for the default (`closed`).
 - `proxy_gate` (Boolean) If true, the Proxy page-gate is enabled: a full-page interstitial runs in front of the whole site at your reverse proxy, and one solve mints a short-TTL gate pass (a first-party cookie) that clears later requests. Requires the Alpha tier or higher; enabling on a lower tier is rejected by the API. The `proxy_path_scope` advisory setting is managed via the dashboard / API / MCP, not this resource.
 - `proxy_ttl_seconds` (Number) How long (seconds) one solve clears the visitor at the Proxy page-gate. The server clamps this to its own min/max regardless of the value set here. May be null to use the server's default.
 - `require_game` (Boolean) If true, verification on this site key must be gated by a game (server-replayed); if false, verification is proof-of-work only and can be passed without playing a game.
-- `reuse` (Boolean) If true, one successful verification on this site key grants a short-lived clearance; later widget mounts present the clearance and skip replaying the game until it expires. A troop-level `forbid_reuse` ceiling overrides this to false.
-- `reuse_persist` (Boolean) If true (and `reuse` is true), the clearance survives a page reload via a first-party cookie; if false, it lives in memory only and is lost on reload.
-- `reuse_window_ms` (Number) Clearance lifetime in milliseconds while `reuse` is true. The server clamps this to its own min/max regardless of the value set here. May be null to use the server's default window.
+- `reuse` (Boolean) When effectively true, one successful verification on this site key grants a short-lived clearance; later widget mounts present the clearance and skip replaying the game until it expires. null = inherit the troop default; the effective value resolves site ?? troop ?? false.
+- `reuse_persist` (Boolean) When effectively true (and `reuse` is on), the clearance survives a page reload via a first-party cookie; when false it lives in memory only and is lost on reload. null = inherit the troop default.
+- `reuse_window_ms` (Number) Clearance lifetime in milliseconds while `reuse` is effectively true. The server clamps this to its own min/max regardless of the value set here. null inherits the troop default (and if the troop sets none, the server default).

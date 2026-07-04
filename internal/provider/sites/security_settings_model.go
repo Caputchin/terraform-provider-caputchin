@@ -30,15 +30,17 @@ type siteSecuritySettingsEnvelope struct {
 }
 
 // apiSiteSecuritySettings is the wire shape returned by the management API.
-// PreviewMode is nullable on the wire (null inherits the troop default,
-// resolved as site ?? troop ?? false); ReuseWindowMs is nullable too (absent/null
-// falls back to the server's default window). Both are pointers here.
+// Verification reuse (`reuse` / `reuse_window_ms` / `reuse_persist`) and
+// `preview_mode` are default+override fields: null on a site row inherits the
+// troop default (resolved site ?? troop ?? default), so they are pointers here to
+// preserve the null-vs-false distinction. `reuse_window_ms` / `proxy_ttl_seconds`
+// null fall back to the server's clamped default.
 type apiSiteSecuritySettings struct {
 	RequireGame     bool    `json:"require_game"`
 	PreviewMode     *bool   `json:"preview_mode"`
-	Reuse           bool    `json:"reuse"`
+	Reuse           *bool   `json:"reuse"`
 	ReuseWindowMs   *int64  `json:"reuse_window_ms"`
-	ReusePersist    bool    `json:"reuse_persist"`
+	ReusePersist    *bool   `json:"reuse_persist"`
 	ProxyGate       bool    `json:"proxy_gate"`
 	ProxyTtlSeconds *int64  `json:"proxy_ttl_seconds"`
 	ProxyFailMode   *string `json:"proxy_fail_mode"`
@@ -49,9 +51,9 @@ func (s apiSiteSecuritySettings) toModel(siteID string) siteSecuritySettingsMode
 		SiteID:          types.StringValue(siteID),
 		RequireGame:     types.BoolValue(s.RequireGame),
 		PreviewMode:     nullableBool(s.PreviewMode),
-		Reuse:           types.BoolValue(s.Reuse),
+		Reuse:           nullableBool(s.Reuse),
 		ReuseWindowMs:   nullableInt64(s.ReuseWindowMs),
-		ReusePersist:    types.BoolValue(s.ReusePersist),
+		ReusePersist:    nullableBool(s.ReusePersist),
 		ProxyGate:       types.BoolValue(s.ProxyGate),
 		ProxyTtlSeconds: nullableInt64(s.ProxyTtlSeconds),
 		ProxyFailMode:   nullableString(s.ProxyFailMode),

@@ -33,7 +33,7 @@ func (r *troopSecuritySettingsResource) Metadata(_ context.Context, req resource
 
 func (r *troopSecuritySettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.\n\nWhen `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.\n\n`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, the backend auto-approves every verification for those site keys (no game, proof-of-work not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.\n\nWhen `forbid_reuse` is true, it forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting. Safety ceiling for sites that should never skip a game replay.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
+		Description: "Troop-wide security settings (the game-gate ceiling). Singleton: one row per troop.\n\nWhen `force_game` is true, every site key in the troop is gated by a game regardless of each site's own setting. Enabling requires at least one installed troop-level marketplace game with a replayable artifact; otherwise the API rejects the change. Requires full-scope create|edit on the troop.\n\n`preview_mode` sets the troop-wide default inherited by any site key that leaves its own `preview_mode` null (site ?? troop ?? false). When the effective value is true, a gated site key still serves its normal experience (the game and its shells/chrome), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced), disabling bot protection while on. Sessions are still recorded, flagged preview. `null` here is equivalent to false.\n\nVerification reuse (`reuse`, `reuse_window_ms`, `reuse_persist`) sets the troop-wide default inherited by any site key that leaves its own value null (site ?? troop ?? default). When effectively on, one solve grants a short-lived clearance that lets later widget mounts skip replaying the game while it is valid; `reuse_window_ms` bounds the clearance lifetime (server-clamped) and `reuse_persist` stores it in a first-party cookie versus memory only. `null` here means no troop default.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
 		Attributes: map[string]schema.Attribute{
 			"troop_id": schema.StringAttribute{
 				Description: "Identifier of the troop these settings belong to. Changing this attribute forces replacement.",
@@ -48,12 +48,22 @@ func (r *troopSecuritySettingsResource) Schema(_ context.Context, _ resource.Sch
 				Computed:    true,
 			},
 			"preview_mode": schema.BoolAttribute{
-				Description: "Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). true auto-approves every verification for those keys (disables bot protection). null is equivalent to false.",
+				Description: "Troop-wide preview-mode default inherited by any site key that sets none (site ?? troop ?? false). When effectively on, those site keys still serve their normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced), disabling bot protection while on. null is equivalent to false.",
 				Optional:    true,
 				Computed:    true,
 			},
-			"forbid_reuse": schema.BoolAttribute{
-				Description: "If true, forces the `reuse` clearance capability off for every site key in the troop, regardless of each site's own setting.",
+			"reuse": schema.BoolAttribute{
+				Description: "Troop-wide verification-reuse default inherited by any site key that sets none (site ?? troop ?? false). When effectively on, one solve grants a short-lived clearance so later widget mounts skip replaying the game. null means no troop default.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"reuse_window_ms": schema.Int64Attribute{
+				Description: "Troop-wide default clearance lifetime in milliseconds, inherited by any site key that sets none. The server clamps this to its own min/max. null means no troop default (the server default applies).",
+				Optional:    true,
+				Computed:    true,
+			},
+			"reuse_persist": schema.BoolAttribute{
+				Description: "Troop-wide default for whether the reuse clearance survives a page reload via a first-party cookie, inherited by any site key that sets none. null is equivalent to false.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -162,8 +172,26 @@ func (r *troopSecuritySettingsResource) buildPatchBody(plan, state troopSecurity
 	if changedBool(plan.PreviewMode, state.PreviewMode) {
 		body["preview_mode"] = plan.PreviewMode.ValueBool()
 	}
-	if changedBool(plan.ForbidReuse, state.ForbidReuse) {
-		body["forbid_reuse"] = plan.ForbidReuse.ValueBool()
+	if changedBoolNullable(plan.Reuse, state.Reuse) {
+		if plan.Reuse.IsNull() {
+			body["reuse"] = nil
+		} else {
+			body["reuse"] = plan.Reuse.ValueBool()
+		}
+	}
+	if changedIntNullable(plan.ReuseWindowMs, state.ReuseWindowMs) {
+		if plan.ReuseWindowMs.IsNull() {
+			body["reuse_window_ms"] = nil
+		} else {
+			body["reuse_window_ms"] = plan.ReuseWindowMs.ValueInt64()
+		}
+	}
+	if changedBoolNullable(plan.ReusePersist, state.ReusePersist) {
+		if plan.ReusePersist.IsNull() {
+			body["reuse_persist"] = nil
+		} else {
+			body["reuse_persist"] = plan.ReusePersist.ValueBool()
+		}
 	}
 	return body
 }

@@ -85,13 +85,13 @@ func TestSiteSecurityGet_DecodesReuse(t *testing.T) {
 	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
 		t.Fatalf("get failed: %v", err)
 	}
-	if !env.Settings.Reuse {
+	if env.Settings.Reuse == nil || !*env.Settings.Reuse {
 		t.Errorf("expected reuse=true, got %v", env.Settings.Reuse)
 	}
 	if env.Settings.ReuseWindowMs == nil || *env.Settings.ReuseWindowMs != 60000 {
 		t.Errorf("expected reuse_window_ms=60000, got %v", env.Settings.ReuseWindowMs)
 	}
-	if !env.Settings.ReusePersist {
+	if env.Settings.ReusePersist == nil || !*env.Settings.ReusePersist {
 		t.Errorf("expected reuse_persist=true, got %v", env.Settings.ReusePersist)
 	}
 	m := env.Settings.toModel("site_xyz")
@@ -119,6 +119,41 @@ func TestSiteSecurityGet_ReuseWindowMsNull(t *testing.T) {
 	m := env.Settings.toModel("site_xyz")
 	if !m.ReuseWindowMs.IsNull() {
 		t.Errorf("expected reuse_window_ms null, got %v", m.ReuseWindowMs)
+	}
+}
+
+// A null site reuse / reuse_persist must stay null in state (inherit the troop
+// default), not collapse to false — the default+override nullable contract.
+func TestSiteSecurityGet_ReuseNullStaysNull(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"site_id":  "site_xyz",
+			"settings": map[string]any{"reuse": nil, "reuse_window_ms": nil, "reuse_persist": nil},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env siteSecuritySettingsEnvelope
+	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	m := env.Settings.toModel("site_xyz")
+	if !m.Reuse.IsNull() || !m.ReusePersist.IsNull() {
+		t.Errorf("expected null reuse/reuse_persist to stay null, got %+v", m)
+	}
+}
+
+// A null plan vs non-null state sends explicit null (clear the override → inherit),
+// not a collapse to false.
+func TestSiteSecurityPatch_ReuseNullClears(t *testing.T) {
+	r := &siteSecuritySettingsResource{}
+	body := r.buildPatchBody(
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), Reuse: types.BoolNull()},
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), Reuse: types.BoolValue(true)},
+	)
+	if v, ok := body["reuse"]; !ok || v != nil {
+		t.Errorf("expected reuse=nil in body when cleared, got %v", body)
 	}
 }
 
