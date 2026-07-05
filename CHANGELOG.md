@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0](https://github.com/Caputchin/terraform-provider-caputchin/compare/v1.1.0...v1.2.0) (2026-07-05)
+
+
+### Features
+
+* add preview_mode and reuse attributes to security-settings resources ([0f6adc3](https://github.com/Caputchin/terraform-provider-caputchin/commit/0f6adc309db77f6ae0b7528a889fdf9c9edef925))
+* reuse troop-default override model on security_settings resources ([4bb2283](https://github.com/Caputchin/terraform-provider-caputchin/commit/4bb228341a7937560de84b5c75ac6ed06e1b7b92))
+* **site:** add Proxy page-gate fields to security_settings (proxy_gate, proxy_ttl_seconds, proxy_fail_mode) ([0bd106d](https://github.com/Caputchin/terraform-provider-caputchin/commit/0bd106d70616f3d7d5c3dd196cbea8bd117770dd))
+* **site:** expose instrumentation toggle on caputchin_site_config (ADR-0078) ([43cf6b2](https://github.com/Caputchin/terraform-provider-caputchin/commit/43cf6b216a4f5bbfd1838d53ee16ded92bd6c49e))
+
 ## [1.1.0](https://github.com/Caputchin/terraform-provider-caputchin/compare/v1.0.1...v1.1.0) (2026-06-01)
 
 
