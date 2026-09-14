@@ -269,6 +269,125 @@ func TestSiteSecurityPatch_ProxyFields(t *testing.T) {
 	}
 }
 
+// The interstitial configuration decodes as five nullable strings, and null on
+// the wire must stay null in state (it means "use the server default", which a
+// caller has to be able to tell apart from an explicit equal-to-default value).
+func TestSiteSecurityGet_DecodesProxyInterstitial(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"site_id": "site_xyz",
+			"settings": map[string]any{
+				"proxy_gate":           true,
+				"proxy_challenge_mode": "widget",
+				"proxy_locale":         "Japanese",
+				"proxy_skin":           "dark",
+				"proxy_cookie_name":    "portal_gate",
+				"proxy_callback_path":  "/auth/cpt",
+			},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env siteSecuritySettingsEnvelope
+	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	m := env.Settings.toModel("site_xyz")
+	if m.ProxyChallengeMode.ValueString() != "widget" {
+		t.Errorf("expected proxy_challenge_mode=widget, got %v", m.ProxyChallengeMode)
+	}
+	if m.ProxyLocale.ValueString() != "Japanese" || m.ProxySkin.ValueString() != "dark" {
+		t.Errorf("expected locale/skin to decode, got %+v", m)
+	}
+	if m.ProxyCookieName.ValueString() != "portal_gate" || m.ProxyCallbackPath.ValueString() != "/auth/cpt" {
+		t.Errorf("expected cookie/callback to decode, got %+v", m)
+	}
+}
+
+func TestSiteSecurityGet_ProxyInterstitialNullable(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"site_id": "site_xyz",
+			"settings": map[string]any{
+				"proxy_gate":           true,
+				"proxy_challenge_mode": nil,
+				"proxy_locale":         nil,
+				"proxy_skin":           nil,
+				"proxy_cookie_name":    nil,
+				"proxy_callback_path":  nil,
+			},
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := client.NewClient(srv.URL, "cpt_pat_test", "test")
+	var env siteSecuritySettingsEnvelope
+	if err := c.Get(context.Background(), siteSecurityPath("site_xyz"), &env); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+	m := env.Settings.toModel("site_xyz")
+	if !m.ProxyChallengeMode.IsNull() || !m.ProxyLocale.IsNull() || !m.ProxySkin.IsNull() ||
+		!m.ProxyCookieName.IsNull() || !m.ProxyCallbackPath.IsNull() {
+		t.Errorf("expected every interstitial field null, got %+v", m)
+	}
+}
+
+func TestSiteSecurityPatch_ProxyInterstitialFields(t *testing.T) {
+	r := &siteSecuritySettingsResource{}
+
+	body := r.buildPatchBody(
+		siteSecuritySettingsModel{
+			SiteID:             types.StringValue("s"),
+			ProxyChallengeMode: types.StringValue("widget"),
+			ProxyLocale:        types.StringValue("Arabic"),
+			ProxySkin:          types.StringValue("light"),
+			ProxyCookieName:    types.StringValue("portal_gate"),
+			ProxyCallbackPath:  types.StringValue("/auth/cpt"),
+		},
+		siteSecuritySettingsModel{SiteID: types.StringValue("s")},
+	)
+	for k, want := range map[string]string{
+		"proxy_challenge_mode": "widget",
+		"proxy_locale":         "Arabic",
+		"proxy_skin":           "light",
+		"proxy_cookie_name":    "portal_gate",
+		"proxy_callback_path":  "/auth/cpt",
+	} {
+		if v, ok := body[k].(string); !ok || v != want {
+			t.Errorf("expected %s=%s in body, got %v", k, want, body[k])
+		}
+	}
+
+	// Clearing each one back to "follow the default" emits an explicit JSON null.
+	nb := r.buildPatchBody(
+		siteSecuritySettingsModel{
+			SiteID:             types.StringValue("s"),
+			ProxyChallengeMode: types.StringNull(),
+			ProxyCookieName:    types.StringNull(),
+		},
+		siteSecuritySettingsModel{
+			SiteID:             types.StringValue("s"),
+			ProxyChallengeMode: types.StringValue("widget"),
+			ProxyCookieName:    types.StringValue("portal_gate"),
+		},
+	)
+	for _, k := range []string{"proxy_challenge_mode", "proxy_cookie_name"} {
+		if v, ok := nb[k]; !ok || v != nil {
+			t.Errorf("expected explicit null %s, got %v", k, nb)
+		}
+	}
+
+	// An unchanged field stays out of the body entirely (PATCH is diff-only).
+	ub := r.buildPatchBody(
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), ProxySkin: types.StringValue("dark")},
+		siteSecuritySettingsModel{SiteID: types.StringValue("s"), ProxySkin: types.StringValue("dark")},
+	)
+	if _, ok := ub["proxy_skin"]; ok {
+		t.Errorf("expected proxy_skin absent from an unchanged patch, got %v", ub)
+	}
+}
+
 func TestSiteSecurityPatch_PreviewModeOnlyChangedFields(t *testing.T) {
 	r := &siteSecuritySettingsResource{}
 

@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/caputchin/terraform-provider-caputchin/internal/provider/client"
@@ -32,7 +34,7 @@ func (r *siteSecuritySettingsResource) Metadata(_ context.Context, req resource.
 
 func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\n`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the site key still serves its normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.\n\nVerification reuse (`reuse`, `reuse_window_ms`, `reuse_persist`) is a default+override setting: null on this site inherits the troop default (resolved site ?? troop ?? default). When effectively on, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only.\n\nWhen `proxy_gate` is true, the Proxy page-gate runs a full-page interstitial in front of the whole site at your reverse proxy (for hosts that cannot embed the widget); one solve mints a short-TTL gate pass cookie that clears later requests. `proxy_ttl_seconds` bounds the pass lifetime (server-clamped); `proxy_fail_mode` (`open`/`closed`) is advisory and templates the integration snippet. The Proxy page-gate requires the Alpha tier or higher; enabling it below that is rejected by the API. The advisory `proxy_path_scope` field is managed via the dashboard / API / MCP, not this resource.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
+		Description: "Per-site security settings for a Caputchin site key (the game gate). Singleton: one row per site.\n\nWhen `require_game` is true, verification on this site key must be gated by a game the server replays, instead of proof-of-work only. Enabling requires at least one installed marketplace game with a replayable artifact for this site (its own or inherited from the troop); otherwise the API rejects the change.\n\n`preview_mode` is a development/integration aid, nullable to support inheritance: when the effective value (this site's own setting, or the troop default when this is null) is true, the site key still serves its normal experience (the game and its shells/chrome when gated, plain cap otherwise), but the backend auto-approves every verification regardless of the solve (game replay and cap not enforced, `/siteverify` returns success), disabling bot protection while on. Sessions are still recorded, flagged preview.\n\nVerification reuse (`reuse`, `reuse_window_ms`, `reuse_persist`) is a default+override setting: null on this site inherits the troop default (resolved site ?? troop ?? default). When effectively on, one successful verification grants a short-lived clearance that lets later widget mounts skip replaying the game while the clearance is valid. `reuse_window_ms` bounds the clearance lifetime (server clamps to its own min/max regardless of the value set here); `reuse_persist` controls whether the clearance survives a page reload via a first-party cookie, versus staying in memory only.\n\nWhen `proxy_gate` is true, the Proxy page-gate runs a full-page interstitial in front of the whole site at your reverse proxy (for hosts that cannot embed the widget); one solve mints a short-TTL gate pass cookie that clears later requests. `proxy_ttl_seconds` bounds the pass lifetime (server-clamped); `proxy_fail_mode` (`open`/`closed`) is advisory and templates the integration snippet. The interstitial is configured by `proxy_challenge_mode` (`game` mounts a verification game, `widget` mounts the plain proof-of-work checkbox), `proxy_locale` and `proxy_skin` (null follows the visitor; the interstitial inherits this site key's widget branding either way), `proxy_cookie_name` and `proxy_callback_path`. A site key whose verification is game-gated always serves `game`, and setting `widget` on one is rejected by the API. The Proxy page-gate requires the Alpha tier or higher; enabling it below that is rejected by the API. The advisory `proxy_path_scope` field is a nested object and remains managed via the dashboard / API / MCP, not this resource.\n\nDestroying this resource removes Terraform tracking but does NOT reset the server-side setting.",
 		Attributes: map[string]schema.Attribute{
 			"site_id": schema.StringAttribute{
 				Description: "Identifier of the site these settings belong to. Changing this attribute forces replacement.",
@@ -78,6 +80,34 @@ func (r *siteSecuritySettingsResource) Schema(_ context.Context, _ resource.Sche
 			},
 			"proxy_fail_mode": schema.StringAttribute{
 				Description: "What the reverse proxy should do when it can't reach the authorizer: `closed` blocks requests (safer for a login portal), `open` lets them through. Advisory: it templates the integration snippet; the proxy enforces it. May be null for the default (`closed`).",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_challenge_mode": schema.StringAttribute{
+				Description: "What the Proxy page-gate interstitial asks the visitor to do: `game` mounts a verification game, `widget` mounts the plain proof-of-work checkbox. May be null for the default (`game`). A site key whose verification is game-gated (its own `require_game`, or its troop's force-game ceiling) always serves `game`, and setting `widget` on such a key is rejected by the API. Setting `game` with no replay-eligible game installed is also rejected.",
+				Optional:    true,
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("game", "widget"),
+				},
+			},
+			"proxy_locale": schema.StringAttribute{
+				Description: "Language for the interstitial: a bundled locale preset name or a language tag. May be null to follow the visitor's own browser language.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_skin": schema.StringAttribute{
+				Description: "Theme for the interstitial: a skin preset name, or `light` / `dark`. May be null to follow the visitor's system colour scheme.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_cookie_name": schema.StringAttribute{
+				Description: "Name of the first-party cookie your reverse proxy sets from the gate pass. May be null for the default (`cpt_gate`). Must be a cookie token of at most 64 characters. Regenerate your reverse-proxy configuration after changing it, or already-cleared visitors are challenged again. The field POSTed to your callback is always `cpt_gate`, whatever the cookie is named.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"proxy_callback_path": schema.StringAttribute{
+				Description: "Path on your own origin that receives the gate-pass handoff POST and sets the cookie. May be null for the default (`/__cpt/callback`). Must be root-relative, with no scheme, host, query or fragment.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -227,6 +257,41 @@ func (r *siteSecuritySettingsResource) buildPatchBody(plan, state siteSecuritySe
 			body["proxy_fail_mode"] = nil
 		} else {
 			body["proxy_fail_mode"] = plan.ProxyFailMode.ValueString()
+		}
+	}
+	if changedStringNullable(plan.ProxyChallengeMode, state.ProxyChallengeMode) {
+		if plan.ProxyChallengeMode.IsNull() {
+			body["proxy_challenge_mode"] = nil
+		} else {
+			body["proxy_challenge_mode"] = plan.ProxyChallengeMode.ValueString()
+		}
+	}
+	if changedStringNullable(plan.ProxyLocale, state.ProxyLocale) {
+		if plan.ProxyLocale.IsNull() {
+			body["proxy_locale"] = nil
+		} else {
+			body["proxy_locale"] = plan.ProxyLocale.ValueString()
+		}
+	}
+	if changedStringNullable(plan.ProxySkin, state.ProxySkin) {
+		if plan.ProxySkin.IsNull() {
+			body["proxy_skin"] = nil
+		} else {
+			body["proxy_skin"] = plan.ProxySkin.ValueString()
+		}
+	}
+	if changedStringNullable(plan.ProxyCookieName, state.ProxyCookieName) {
+		if plan.ProxyCookieName.IsNull() {
+			body["proxy_cookie_name"] = nil
+		} else {
+			body["proxy_cookie_name"] = plan.ProxyCookieName.ValueString()
+		}
+	}
+	if changedStringNullable(plan.ProxyCallbackPath, state.ProxyCallbackPath) {
+		if plan.ProxyCallbackPath.IsNull() {
+			body["proxy_callback_path"] = nil
+		} else {
+			body["proxy_callback_path"] = plan.ProxyCallbackPath.ValueString()
 		}
 	}
 	return body

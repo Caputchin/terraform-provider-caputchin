@@ -19,6 +19,13 @@ type siteSecuritySettingsModel struct {
 	ProxyGate       types.Bool   `tfsdk:"proxy_gate"`
 	ProxyTtlSeconds types.Int64  `tfsdk:"proxy_ttl_seconds"`
 	ProxyFailMode   types.String `tfsdk:"proxy_fail_mode"`
+	// Interstitial configuration. All null-means-server-default, so they are
+	// types.String (never bool/enum) and round-trip null distinctly.
+	ProxyChallengeMode types.String `tfsdk:"proxy_challenge_mode"`
+	ProxyLocale        types.String `tfsdk:"proxy_locale"`
+	ProxySkin          types.String `tfsdk:"proxy_skin"`
+	ProxyCookieName    types.String `tfsdk:"proxy_cookie_name"`
+	ProxyCallbackPath  types.String `tfsdk:"proxy_callback_path"`
 }
 
 // siteSecuritySettingsEnvelope matches the GET / PATCH response shape:
@@ -44,6 +51,13 @@ type apiSiteSecuritySettings struct {
 	ProxyGate       bool    `json:"proxy_gate"`
 	ProxyTtlSeconds *int64  `json:"proxy_ttl_seconds"`
 	ProxyFailMode   *string `json:"proxy_fail_mode"`
+	// Pointers: null means "unset, use the server default", which a caller must
+	// be able to tell apart from an explicit value that equals the default.
+	ProxyChallengeMode *string `json:"proxy_challenge_mode"`
+	ProxyLocale        *string `json:"proxy_locale"`
+	ProxySkin          *string `json:"proxy_skin"`
+	ProxyCookieName    *string `json:"proxy_cookie_name"`
+	ProxyCallbackPath  *string `json:"proxy_callback_path"`
 }
 
 func (s apiSiteSecuritySettings) toModel(siteID string) siteSecuritySettingsModel {
@@ -57,5 +71,11 @@ func (s apiSiteSecuritySettings) toModel(siteID string) siteSecuritySettingsMode
 		ProxyGate:       types.BoolValue(s.ProxyGate),
 		ProxyTtlSeconds: nullableInt64(s.ProxyTtlSeconds),
 		ProxyFailMode:   nullableString(s.ProxyFailMode),
+
+		ProxyChallengeMode: nullableString(s.ProxyChallengeMode),
+		ProxyLocale:        nullableString(s.ProxyLocale),
+		ProxySkin:          nullableString(s.ProxySkin),
+		ProxyCookieName:    nullableString(s.ProxyCookieName),
+		ProxyCallbackPath:  nullableString(s.ProxyCallbackPath),
 	}
 }
